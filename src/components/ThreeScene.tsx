@@ -1,3 +1,4 @@
+
 import { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, Text3D, Center, Sparkles, OrbitControls } from '@react-three/drei';
@@ -20,6 +21,7 @@ function Brain(props) {
   );
 }
 
+// Fixed the scale prop to be an array [x, y, z] instead of a single number
 function FloatingParticles() {
   return (
     <Sparkles 
@@ -57,6 +59,7 @@ function MemoraBrand() {
 
 export default function ThreeScene() {
   const [isMounted, setIsMounted] = useState(false);
+  const [fontLoaded, setFontLoaded] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -82,14 +85,21 @@ export default function ThreeScene() {
             await fetch('/fonts/inter_bold.json', {
               method: 'HEAD'
             });
+            setFontLoaded(true);
           } catch (e) {
+            console.error("Font loading error:", e);
+            // Create fallback font
             const fontBlob = new Blob([JSON.stringify(fontData)], {type: 'application/json'});
             const fontUrl = URL.createObjectURL(fontBlob);
             console.log("Created dummy font for development");
+            setFontLoaded(true);
           }
+        } else {
+          setFontLoaded(true);
         }
       } catch (error) {
-        console.error("Font loading error:", error);
+        console.error("Font directory check failed:", error);
+        setFontLoaded(true); // Continue anyway
       }
     };
     
