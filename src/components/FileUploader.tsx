@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, X, FileText, Loader2, Check, FileType, FileImage, FilePdf } from "lucide-react";
+import { Upload, X, FileText, Loader2, Check, FileType, FileImage, File } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function FileUploader() {
@@ -66,7 +66,7 @@ export default function FileUploader() {
     const extension = file.name.split('.').pop()?.toLowerCase();
     
     if (extension === 'pdf') {
-      return <FilePdf className="h-5 w-5 text-memora-purple" />;
+      return <File className="h-5 w-5 text-memora-purple" />; // Changed from FilePdf to File
     } else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension || '')) {
       return <FileImage className="h-5 w-5 text-memora-purple" />;
     } else {
