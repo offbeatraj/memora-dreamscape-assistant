@@ -10,6 +10,8 @@ import Upload from "./pages/Upload";
 import Resources from "./pages/Resources";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import PatientList from "./pages/PatientList";
+import PatientDetail from "./pages/PatientDetail";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +27,8 @@ const App = () => (
           <Route path="/upload" element={<Upload />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/patients" element={<PatientList />} />
+          <Route path="/patient/:id" element={<PatientDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

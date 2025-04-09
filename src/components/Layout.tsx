@@ -2,20 +2,22 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, Brain } from "lucide-react";
+import { Menu, X, Brain, MessageSquare, Upload, BookOpen, LayoutDashboard, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 interface NavItem {
   label: string;
   href: string;
+  icon: React.ReactNode;
 }
 
 const navItems: NavItem[] = [
-  { label: "Home", href: "/" },
-  { label: "Chat", href: "/chat" },
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Resources", href: "/resources" },
-  { label: "Upload", href: "/upload" },
+  { label: "Home", href: "/", icon: <Brain className="h-4 w-4" /> },
+  { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+  { label: "Chat Assistant", href: "/chat", icon: <MessageSquare className="h-4 w-4" /> },
+  { label: "Patients", href: "/patients", icon: <Users className="h-4 w-4" /> },
+  { label: "Upload", href: "/upload", icon: <Upload className="h-4 w-4" /> },
+  { label: "Resources", href: "/resources", icon: <BookOpen className="h-4 w-4" /> },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -38,12 +40,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link
               key={item.href}
               to={item.href}
-              className={`text-sm font-medium transition-colors ${
+              className={`text-sm font-medium transition-colors flex items-center gap-2 ${
                 location.pathname === item.href
                   ? "text-memora-purple-dark"
                   : "text-foreground/70 hover:text-foreground"
               }`}
             >
+              <span className={location.pathname === item.href ? "text-memora-purple" : "text-foreground/70"}>
+                {item.icon}
+              </span>
               {item.label}
             </Link>
           ))}
@@ -64,12 +69,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   to={item.href}
                   onClick={() => setOpen(false)}
-                  className={`text-lg font-medium transition-colors p-2 rounded-md ${
+                  className={`text-lg font-medium transition-colors p-2 rounded-md flex items-center gap-3 ${
                     location.pathname === item.href
                       ? "bg-memora-purple/10 text-memora-purple-dark"
                       : "hover:bg-memora-purple/5"
                   }`}
                 >
+                  <span className={location.pathname === item.href ? "text-memora-purple" : "text-foreground/70"}>
+                    {item.icon}
+                  </span>
                   {item.label}
                 </Link>
               ))}
