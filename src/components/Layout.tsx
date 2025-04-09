@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Brain } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 interface NavItem {
@@ -13,6 +13,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "Home", href: "/" },
   { label: "Chat", href: "/chat" },
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Resources", href: "/resources" },
   { label: "Upload", href: "/upload" },
 ];
@@ -23,9 +24,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-memora-gray">
-      <header className="w-full py-4 px-6 flex items-center justify-between backdrop-blur-sm bg-white/50 border-b border-slate-100">
+      <header className="w-full py-4 px-6 flex items-center justify-between backdrop-blur-sm bg-white/50 border-b border-slate-100 sticky top-0 z-50">
         <Link to="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-memora-purple to-memora-purple-dark"></div>
+          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-memora-purple to-memora-purple-dark flex items-center justify-center">
+            <Brain className="h-4 w-4 text-white" />
+          </div>
           <span className="font-semibold text-xl text-gradient">Memora</span>
         </Link>
 

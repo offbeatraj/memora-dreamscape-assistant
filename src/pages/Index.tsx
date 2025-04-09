@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Brain, MessageCircle, Upload, Book } from "lucide-react";
+import { Brain, MessageCircle, Upload, Book, LayoutDashboard } from "lucide-react";
 import ThreeScene from "@/components/ThreeScene";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -15,6 +15,13 @@ const QuickActions = () => {
       description: "Ask questions about Alzheimer's or get personalized assistance",
       link: "/chat",
       color: "bg-gradient-to-br from-blue-100 to-purple-100",
+    },
+    {
+      icon: <LayoutDashboard className="h-6 w-6" />,
+      title: "Patient Dashboard",
+      description: "Track cognitive health, activities, and access your memory support tools",
+      link: "/dashboard",
+      color: "bg-gradient-to-br from-purple-100 to-pink-100",
     },
     {
       icon: <Upload className="h-6 w-6" />,
@@ -33,7 +40,7 @@ const QuickActions = () => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
       {actions.map((action, i) => (
         <Link to={action.link} key={i} className="group">
           <Card className="h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 glass-card">
@@ -90,7 +97,7 @@ const Home = () => {
                 className="border-memora-purple text-memora-purple hover:bg-memora-purple/10"
                 asChild
               >
-                <Link to="/resources">Learn More</Link>
+                <Link to="/dashboard">View Dashboard</Link>
               </Button>
             </div>
           </div>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { Brain, Send, Loader2, User, Bot } from "lucide-react";
+import { Brain, Send, Loader2, User, Bot, ChevronDown, Star } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 type Message = {
@@ -12,12 +12,13 @@ type Message = {
   content: string;
   role: "user" | "assistant";
   timestamp: Date;
+  important?: boolean;
 };
 
 const initialMessages: Message[] = [
   {
     id: "1",
-    content: "Hello! I'm Memora, your personal assistant. How can I help you today?",
+    content: "Hello! I'm Memora, your personal memory assistant. How can I help you today? I can answer questions about Alzheimer's, provide daily support, or just chat.",
     role: "assistant",
     timestamp: new Date(),
   },
@@ -25,9 +26,10 @@ const initialMessages: Message[] = [
 
 const sampleQuestions = [
   "What are the early symptoms of Alzheimer's?",
-  "How can I support someone with memory loss?",
-  "What activities are good for brain health?",
-  "Tell me about new research on Alzheimer's",
+  "Help me remember to take my medicine",
+  "What activities can improve brain health?",
+  "Tell me about my family photos",
+  "What day is it today?",
 ];
 
 export default function ChatInterface() {
@@ -73,8 +75,14 @@ export default function ChatInterface() {
         response = "While there's no cure for Alzheimer's disease yet, there are medications that can temporarily improve symptoms or slow the rate of decline. Non-drug approaches like cognitive stimulation, physical activity, and social engagement are also beneficial.";
       } else if (input.toLowerCase().includes("help") || input.toLowerCase().includes("support")) {
         response = "Supporting someone with Alzheimer's includes establishing regular routines, creating a safe environment, providing memory cues, and encouraging social activities. It's also important to take care of yourself as a caregiver by seeking support groups and respite care when needed.";
+      } else if (input.toLowerCase().includes("medicine") || input.toLowerCase().includes("medication")) {
+        response = "I've made a note to remind you about your medicine. Is there a specific time you'd like to be reminded? Creating medication routines and using visual cues can be very helpful for remembering to take medicine on time.";
+      } else if (input.toLowerCase().includes("day") || input.toLowerCase().includes("date")) {
+        const today = new Date();
+        const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        response = `Today is ${today.toLocaleDateString('en-US', options)}. I hope you're having a wonderful day!`;
       } else {
-        response = "Thank you for your question. I'm designed to provide information about Alzheimer's disease and support for patients and caregivers. Could you please specify what aspect of Alzheimer's you'd like to know more about?";
+        response = "Thank you for your message. I'm here to provide information about Alzheimer's disease and support for patients and caregivers. Feel free to ask about symptoms, treatments, daily support strategies, or even just chat about your day.";
       }
       
       const assistantMessage: Message = {
@@ -82,6 +90,7 @@ export default function ChatInterface() {
         content: response,
         role: "assistant",
         timestamp: new Date(),
+        important: input.toLowerCase().includes("medicine") || input.toLowerCase().includes("medication"),
       };
       
       setMessages((prev) => [...prev, assistantMessage]);
@@ -91,6 +100,21 @@ export default function ChatInterface() {
 
   const handleSampleQuestion = (question: string) => {
     setInput(question);
+  };
+
+  const markAsImportant = (messageId: string) => {
+    setMessages(prev => 
+      prev.map(message => 
+        message.id === messageId 
+          ? { ...message, important: !message.important } 
+          : message
+      )
+    );
+    
+    toast({
+      title: "Message marked as important",
+      description: "This message will be saved for future reference.",
+    });
   };
 
   return (
@@ -115,15 +139,27 @@ export default function ChatInterface() {
                   </div>
                 </Avatar>
                 <div
-                  className={`rounded-2xl px-4 py-2 ${
+                  className={`rounded-2xl px-4 py-2 relative ${
                     message.role === "assistant"
                       ? "bg-white border border-memora-purple/20"
                       : "bg-memora-purple text-white"
-                  }`}
+                  } ${message.important ? "border-2 border-amber-400" : ""}`}
                 >
                   <div className="prose prose-sm max-w-none">
                     {message.content}
                   </div>
+                  
+                  {message.role === "assistant" && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="absolute -bottom-2 right-2 h-6 w-6 rounded-full p-0 opacity-70 hover:opacity-100"
+                      onClick={() => markAsImportant(message.id)}
+                    >
+                      <Star className={`h-4 w-4 ${message.important ? "fill-amber-400 text-amber-400" : "text-gray-400"}`} />
+                      <span className="sr-only">Mark as important</span>
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -153,7 +189,7 @@ export default function ChatInterface() {
             variant="outline"
             size="sm"
             onClick={() => handleSampleQuestion(question)}
-            className="text-xs bg-white/50 hover:bg-white"
+            className="text-xs bg-white/50 hover:bg-white transition-all duration-300 hover:shadow-md"
           >
             {question}
           </Button>
@@ -164,8 +200,8 @@ export default function ChatInterface() {
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your message..."
-          className="resize-none bg-white/70"
+          placeholder="Type your message here..."
+          className="resize-none bg-white/70 text-lg"
           disabled={isLoading}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -177,7 +213,7 @@ export default function ChatInterface() {
         <Button 
           type="submit" 
           disabled={isLoading || !input.trim()}
-          className="bg-memora-purple hover:bg-memora-purple-dark"
+          className="bg-memora-purple hover:bg-memora-purple-dark transition-all duration-300"
         >
           {isLoading ? (
             <Loader2 className="h-5 w-5 animate-spin" />

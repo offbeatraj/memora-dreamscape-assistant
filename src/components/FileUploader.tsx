@@ -5,12 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, X, FileText, Loader2, Check } from "lucide-react";
+import { Upload, X, FileText, Loader2, Check, FileType, FileImage, FilePdf } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function FileUploader() {
   const [files, setFiles] = useState<File[]>([]);
   const [notes, setNotes] = useState("");
+  const [fileType, setFileType] = useState<"medical" | "personal" | "other">("medical");
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,22 +49,67 @@ export default function FileUploader() {
       
       toast({
         title: "Files uploaded successfully",
-        description: `${files.length} file(s) have been uploaded and will be processed.`,
+        description: `${files.length} file(s) have been processed and added to the patient's record.`,
       });
       
       // Reset form after successful upload
       setTimeout(() => {
         setFiles([]);
         setNotes("");
+        setFileType("medical");
         setUploadSuccess(false);
       }, 3000);
     }, 2000);
+  };
+
+  const getFileIcon = (file: File) => {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (extension === 'pdf') {
+      return <FilePdf className="h-5 w-5 text-memora-purple" />;
+    } else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension || '')) {
+      return <FileImage className="h-5 w-5 text-memora-purple" />;
+    } else {
+      return <FileText className="h-5 w-5 text-memora-purple" />;
+    }
   };
 
   return (
     <Card className="glass-card">
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit}>
+          <div className="mb-6">
+            <Label htmlFor="file-type" className="block mb-2">
+              File Type
+            </Label>
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                type="button"
+                variant={fileType === "medical" ? "default" : "outline"}
+                className={fileType === "medical" ? "bg-memora-purple hover:bg-memora-purple-dark" : ""}
+                onClick={() => setFileType("medical")}
+              >
+                Medical Records
+              </Button>
+              <Button
+                type="button"
+                variant={fileType === "personal" ? "default" : "outline"}
+                className={fileType === "personal" ? "bg-memora-purple hover:bg-memora-purple-dark" : ""}
+                onClick={() => setFileType("personal")}
+              >
+                Personal Memories
+              </Button>
+              <Button
+                type="button"
+                variant={fileType === "other" ? "default" : "outline"}
+                className={fileType === "other" ? "bg-memora-purple hover:bg-memora-purple-dark" : ""}
+                onClick={() => setFileType("other")}
+              >
+                Other Documents
+              </Button>
+            </div>
+          </div>
+          
           <div className="mb-6">
             <Label htmlFor="file-upload" className="block mb-2">
               Upload Files
@@ -84,7 +130,7 @@ export default function FileUploader() {
                 multiple
                 className="hidden"
                 onChange={handleFileChange}
-                accept=".pdf,.docx,.jpg,.jpeg,.png"
+                accept=".pdf,.docx,.jpg,.jpeg,.png,.txt"
               />
             </div>
           </div>
@@ -92,14 +138,14 @@ export default function FileUploader() {
           {files.length > 0 && (
             <div className="mb-6">
               <Label className="block mb-2">Selected Files</Label>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                 {files.map((file, index) => (
                   <div
                     key={`${file.name}-${index}`}
-                    className="flex items-center justify-between bg-white/70 p-2 rounded-md"
+                    className="flex items-center justify-between bg-white/70 p-2 rounded-md hover:bg-white/90 transition-colors"
                   >
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-memora-purple" />
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      {getFileIcon(file)}
                       <span className="text-sm truncate max-w-[200px]">{file.name}</span>
                       <span className="text-xs text-muted-foreground">
                         ({(file.size / (1024 * 1024)).toFixed(2)} MB)
@@ -110,6 +156,7 @@ export default function FileUploader() {
                       variant="ghost"
                       size="icon"
                       onClick={() => removeFile(index)}
+                      className="hover:bg-red-50 hover:text-red-500 transition-colors"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -127,23 +174,23 @@ export default function FileUploader() {
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any relevant information about these files..."
+              placeholder={fileType === "medical" ? "Add any relevant medical information..." : fileType === "personal" ? "Add context about these personal memories..." : "Add any helpful notes about these documents..."}
               className="bg-white/70"
             />
           </div>
 
           <Button
             type="submit"
-            className="w-full bg-memora-purple hover:bg-memora-purple-dark"
+            className="w-full bg-memora-purple hover:bg-memora-purple-dark transition-all duration-300"
             disabled={uploading || uploadSuccess}
           >
             {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {uploadSuccess && <Check className="mr-2 h-4 w-4" />}
             {uploading
-              ? "Uploading..."
+              ? "Processing Files..."
               : uploadSuccess
-              ? "Uploaded Successfully"
-              : "Upload Files"}
+              ? "Files Successfully Processed"
+              : `Upload ${fileType === "medical" ? "Medical Records" : fileType === "personal" ? "Personal Memories" : "Documents"}`}
           </Button>
         </form>
       </CardContent>
