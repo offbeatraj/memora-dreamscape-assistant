@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, Text3D, Center, Sparkles, OrbitControls } from '@react-three/drei';
