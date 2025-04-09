@@ -1,7 +1,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, Float, Text3D, Center, Sparkles, OrbitControls } from '@react-three/drei';
+import { Float, Text3D, Center, Sparkles, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 function Brain(props: any) {
@@ -16,7 +16,7 @@ function Brain(props: any) {
   return (
     <mesh ref={mesh} {...props}>
       <sphereGeometry args={[1, 32, 32]} />
-      <meshStandardMaterial color="#9b87f5" wireframe />
+      <meshStandardMaterial wireframe color="#9b87f5" />
     </mesh>
   );
 }
