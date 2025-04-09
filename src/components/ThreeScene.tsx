@@ -4,8 +4,8 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, Text3D, Center, Sparkles, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 
-function Brain(props: any) {
-  const mesh = useRef<THREE.Mesh>(null!);
+function Brain(props) {
+  const mesh = useRef(null);
   
   useFrame((state) => {
     if (mesh.current) {
@@ -26,7 +26,7 @@ function FloatingParticles() {
     <Sparkles 
       count={50} 
       size={4} 
-      scale={6} 
+      scale={[6, 6, 6]} 
       speed={0.4}
       color="#7E69AB" 
       opacity={0.5}
@@ -76,17 +76,21 @@ export default function ThreeScene() {
         "original_font_information": {"format": 0, "copyright": "", "fontFamily": "", "fontSubfamily": "", "uniqueID": "", "fullName": "", "version": "", "postScriptName": ""}
       };
       
-      const fontsDir = await window.fetch('/fonts');
-      if (!fontsDir.ok) {
-        try {
-          await fetch('/fonts/inter_bold.json', {
-            method: 'HEAD'
-          });
-        } catch (e) {
-          const fontBlob = new Blob([JSON.stringify(fontData)], {type: 'application/json'});
-          const fontUrl = URL.createObjectURL(fontBlob);
-          console.log("Created dummy font for development");
+      try {
+        const fontsDir = await window.fetch('/fonts');
+        if (!fontsDir.ok) {
+          try {
+            await fetch('/fonts/inter_bold.json', {
+              method: 'HEAD'
+            });
+          } catch (e) {
+            const fontBlob = new Blob([JSON.stringify(fontData)], {type: 'application/json'});
+            const fontUrl = URL.createObjectURL(fontBlob);
+            console.log("Created dummy font for development");
+          }
         }
+      } catch (error) {
+        console.error("Font loading error:", error);
       }
     };
     
@@ -99,7 +103,7 @@ export default function ThreeScene() {
 
   return (
     <div className="h-full w-full">
-      <Canvas className="touch-none" camera={{ position: [0, 0, 5], fov: 45 }}>
+      <Canvas camera={{ position: [0, 0, 5], fov: 45 }} className="touch-none">
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 10]} intensity={0.5} />
         <FloatingParticles />
