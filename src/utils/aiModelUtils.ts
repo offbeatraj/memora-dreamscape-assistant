@@ -8,18 +8,22 @@ const modelConfigs = {
   'gpt2': {
     name: 'gpt2',
     task: 'text-generation',
+    restricted: false
   },
   'llama-2': {
     name: 'TheBloke/Llama-2-7B-Chat-ONNX',
     task: 'text-generation',
+    restricted: true
   },
   'flan-t5': {
     name: 'google/flan-t5-small',
     task: 'text2text-generation',
+    restricted: false
   },
   'mistral': {
     name: 'mistralai/Mistral-7B-Instruct-v0.3',
     task: 'text-generation',
+    restricted: true
   }
 };
 
@@ -27,7 +31,9 @@ const modelConfigs = {
 export function setHuggingFaceToken(token: string) {
   try {
     if (token && token.trim()) {
+      // Store both in localStorage and as a global variable for direct API access
       localStorage.setItem('hf_token', token);
+      
       // Clear model cache to reload with new token
       Object.keys(modelInstances).forEach(key => {
         delete modelInstances[key];
@@ -83,29 +89,41 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
     // Get the token
     const hfToken = getHuggingFaceToken();
     
-    // Check if token exists for non-default models
-    if (!hfToken) {
-      return "Please provide a valid Hugging Face access token in the settings to use this model.";
+    // Check if token exists for restricted models
+    if (config.restricted && !hfToken) {
+      return "This model is restricted. Please provide a valid Hugging Face access token in the settings to use this model.";
     }
     
     // Load or retrieve cached model
-    const modelKey = `${modelName}_${hfToken ? 'auth' : 'noauth'}`;
+    const modelKey = `${modelName}_${hfToken || 'noauth'}`;
     
     if (!modelInstances[modelKey]) {
       console.log(`Loading model ${config.name}...`);
       try {
         if (hfToken) {
-          // Use the token for API access
-          console.log("Setting HF token for authentication");
+          // Set up authentication for Hugging Face API
+          console.log("Setting up HF token authentication");
+          // Set the token in localStorage with the specific key expected by the transformers.js library
+          localStorage.setItem('huggingface-auth-token', hfToken);
+          // For backward compatibility
           localStorage.setItem('hf_api_token', hfToken);
         }
         
-        // Pass an empty object as options to avoid the type error
-        // The @huggingface/transformers library will use the token from localStorage
-        modelInstances[modelKey] = await pipeline(config.task, config.name, {});
+        // Create pipeline with proper authentication
+        const options = {
+          use_auth_token: hfToken || undefined,
+        };
+        
+        modelInstances[modelKey] = await pipeline(config.task, config.name, options);
         
       } catch (error) {
         console.error('Error loading model:', error);
+        // Provide more detailed error message
+        if (error instanceof Error) {
+          if (error.message.includes('Unauthorized') || error.message.includes('401')) {
+            return "Authentication error. Your token may not have access to this model. Please check your Hugging Face token permissions or try a different model.";
+          }
+        }
         return "I'm sorry, there was an error loading the AI model. Please check your Hugging Face token or try a different model.";
       }
     }

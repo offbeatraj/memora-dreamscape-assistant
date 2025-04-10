@@ -2,7 +2,7 @@
 import Layout from "@/components/Layout";
 import ChatInterface from "@/components/ChatInterface";
 import PatientAIAssistant from "@/components/PatientAIAssistant";
-import { Brain, Settings, Key } from "lucide-react";
+import { Brain, Settings, Key, Info, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
@@ -13,6 +13,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { setHuggingFaceToken, getHuggingFaceToken } from "@/utils/aiModelUtils";
+
+// Model information including access requirements
+const modelInfo = {
+  "default": { name: "Default", requiresToken: false },
+  "gpt2": { name: "GPT-2", requiresToken: false },
+  "llama-2": { name: "Llama-2", requiresToken: true },
+  "flan-t5": { name: "FLAN-T5", requiresToken: false },
+  "mistral": { name: "Mistral-7B-Instruct", requiresToken: true }
+};
 
 export default function Chat() {
   const [aiModel, setAiModel] = useState("default");
@@ -55,6 +64,17 @@ export default function Chat() {
     setTokenVisible(!tokenVisible);
   };
 
+  const handleModelChange = (value: string) => {
+    if (modelInfo[value as keyof typeof modelInfo]?.requiresToken && !getHuggingFaceToken()) {
+      toast({
+        title: "Token Required",
+        description: `The ${modelInfo[value as keyof typeof modelInfo]?.name} model requires a Hugging Face token. Please add your token in settings.`,
+        variant: "warning",
+      });
+    }
+    setAiModel(value);
+  };
+
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
@@ -68,7 +88,7 @@ export default function Chat() {
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-9 gap-1">
                   <Settings className="h-4 w-4" />
-                  <span>Model: {aiModel === "default" ? "Default" : aiModel}</span>
+                  <span>Model: {modelInfo[aiModel as keyof typeof modelInfo]?.name || "Default"}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[300px] p-0" align="end">
@@ -76,17 +96,22 @@ export default function Chat() {
                   <p className="text-sm font-medium mb-2">Select AI Model</p>
                   <Select
                     value={aiModel}
-                    onValueChange={setAiModel}
+                    onValueChange={handleModelChange}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="default">Default</SelectItem>
-                      <SelectItem value="gpt2">GPT-2</SelectItem>
-                      <SelectItem value="llama-2">Llama-2</SelectItem>
-                      <SelectItem value="flan-t5">FLAN-T5</SelectItem>
-                      <SelectItem value="mistral">Mistral-7B-Instruct</SelectItem>
+                      {Object.entries(modelInfo).map(([key, info]) => (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2">
+                            <span>{info.name}</span>
+                            {info.requiresToken && (
+                              <AlertTriangle className="h-3 w-3 text-amber-500" />
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   
@@ -121,12 +146,13 @@ export default function Chat() {
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Required for all models except Default. Get your token at <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" className="underline">huggingface.co</a>
+                        Required for models marked with <AlertTriangle className="h-3 w-3 text-amber-500 inline" />. Get your token at <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" className="underline">huggingface.co</a>
                       </p>
-                      {aiModel !== "default" && (
+                      {modelInfo[aiModel as keyof typeof modelInfo]?.requiresToken && (
                         <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mt-2">
                           <p className="text-xs text-yellow-700">
-                            Make sure your token has read access to the selected model. Save your token before selecting a model.
+                            <Info className="h-3 w-3 inline mr-1" />
+                            For Mistral and Llama-2 models, you need to request and be granted model access on Hugging Face.
                           </p>
                         </div>
                       )}
