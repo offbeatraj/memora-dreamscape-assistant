@@ -1,4 +1,3 @@
-
 import { pipeline, PipelineType } from '@huggingface/transformers';
 
 // Model cache to avoid reloading models
@@ -17,29 +16,31 @@ const DEFAULT_MODEL = {
   }
 };
 
-// We'll add support for OpenAI as an alternative
-let OPENAI_API_KEY = '';
+// We'll use Requesty router API instead of OpenAI
+const REQUESTY_API_URL = 'https://router.requesty.ai/v1';
+const REQUESTY_DEFAULT_MODEL = 'google/gemini-2.0-flash-exp';
+let REQUESTY_API_KEY = 'sk-zAFSEFXcTYKcY1E7EfoVE8D51olgUwFPnI35XOnQXMdOjmqZUgbWxcqJNsiCJ4kETwFCVSuy0LjqlJUFf2/aa8+AtXq8BxdShKnbSOPa4AQ=';
 
 // Format the prompt for the model
 function formatPrompt(prompt: string): string {
   return `Question: ${prompt}\nAnswer:`;
 }
 
-// Set OpenAI API key
+// Set API key
 export function setOpenAIKey(key: string): void {
-  OPENAI_API_KEY = key;
-  localStorage.setItem('openai_key', key);
+  REQUESTY_API_KEY = key;
+  localStorage.setItem('requesty_key', key);
 }
 
-// Get OpenAI API key
+// Get API key
 export function getOpenAIKey(): string {
-  const storedKey = localStorage.getItem('openai_key');
-  return OPENAI_API_KEY || storedKey || '';
+  const storedKey = localStorage.getItem('requesty_key');
+  return REQUESTY_API_KEY || storedKey || '';
 }
 
-// Check if we have OpenAI access
+// Check if we have API access
 export function hasOpenAIAccess(): boolean {
-  return !!getOpenAIKey();
+  return !!REQUESTY_API_KEY;
 }
 
 // Patient data cache for context-aware responses
@@ -55,22 +56,22 @@ export function getPatientData(patientId: string): any {
   return patientDataCache[patientId] || null;
 }
 
-// Function to use OpenAI API
-async function getOpenAIResponse(prompt: string): Promise<string> {
+// Function to use Requesty router API with Gemini model
+async function getRequestyResponse(prompt: string): Promise<string> {
   try {
-    const apiKey = getOpenAIKey();
+    const apiKey = REQUESTY_API_KEY;
     if (!apiKey) {
-      throw new Error("OpenAI API key is not set");
+      throw new Error("API key is not set");
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(REQUESTY_API_URL + '/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: REQUESTY_DEFAULT_MODEL,
         messages: [
           {
             role: 'system',
@@ -83,18 +84,18 @@ async function getOpenAIResponse(prompt: string): Promise<string> {
         ],
         temperature: 0.7,
         max_tokens: 500
-      })
+      }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || "Error calling OpenAI API");
+      throw new Error(error.error?.message || "Error calling Requesty API");
     }
 
     const data = await response.json();
     return data.choices[0].message.content;
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    console.error('Requesty API error:', error);
     throw error;
   }
 }
@@ -106,21 +107,16 @@ export async function getModelResponse(prompt: string): Promise<string> {
     
     console.log("Processing prompt:", prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""));
     
-    // Try to use OpenAI first if available
-    if (hasOpenAIAccess()) {
-      try {
-        console.log("Using OpenAI API for response");
-        const response = await getOpenAIResponse(prompt);
-        return response;
-      } catch (error) {
-        console.error("OpenAI API error, falling back:", error);
-        // Fall back to simulated responses if OpenAI fails
-      }
+    // Try to use Requesty API with Gemini model
+    try {
+      console.log("Using Requesty API with Gemini model for response");
+      const response = await getRequestyResponse(prompt);
+      return response;
+    } catch (error) {
+      console.error("Requesty API error, falling back to simulated response:", error);
+      // Fall back to simulated responses if API fails
+      return simulateResponse(prompt, containsPatientContext);
     }
-
-    // Print this warning to the console so user knows we're using simulated responses
-    console.log("Using simulated response due to model access limitations");
-    return simulateResponse(prompt, containsPatientContext);
   } catch (error) {
     console.error('Error generating response:', error);
     const containsPatientContext = prompt.toLowerCase().includes('context: this is about patient');
@@ -268,4 +264,3 @@ function simulateResponse(prompt: string, isPatientQuery: boolean): string {
     return "I'm here to help with information about Alzheimer's disease and memory care. You can ask me about symptoms, treatments, medications (like Donepezil or Memantine), dietary recommendations, exercise benefits, daily living strategies, or specific memory concerns. I can also provide information about different stages of Alzheimer's, caregiving approaches, and the latest research developments. How can I assist you today?";
   }
 }
-
