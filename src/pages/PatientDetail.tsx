@@ -32,6 +32,7 @@ import {
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
+// Updated interface to match database schema
 interface CareTask {
   id: string;
   title: string;
@@ -39,6 +40,8 @@ interface CareTask {
   frequency: string;
   status: "pending" | "completed" | "overdue";
   patient_id?: string;
+  created_at?: string;
+  due_date?: string;
 }
 
 interface DietItem {
@@ -48,8 +51,10 @@ interface DietItem {
   notes?: string;
   id?: string;
   patient_id?: string;
+  created_at?: string;
 }
 
+// Updated interface to match database schema
 interface PatientNote {
   id: string;
   date: string;
@@ -58,6 +63,8 @@ interface PatientNote {
   type: "medical" | "caregiver" | "cognitive" | "other";
   patient_id?: string;
   title?: string;
+  created_at?: string;
+  note_type?: string;
 }
 
 interface Patient {
@@ -124,7 +131,7 @@ export default function PatientDetail() {
   const [newNote, setNewNote] = useState({
     title: '',
     content: '',
-    type: 'caregiver',
+    type: 'caregiver' as "medical" | "caregiver" | "cognitive" | "other",
     author: ''
   });
   
@@ -175,7 +182,13 @@ export default function PatientDetail() {
       
       if (error) throw error;
       
-      setCareTasks(data || []);
+      // Map database results to CareTask type with proper status typing
+      const typedTasks: CareTask[] = (data || []).map(task => ({
+        ...task,
+        status: task.status as "pending" | "completed" | "overdue"
+      }));
+      
+      setCareTasks(typedTasks);
     } catch (error) {
       console.error('Error fetching care tasks:', error);
       toast({
@@ -222,7 +235,20 @@ export default function PatientDetail() {
       
       if (error) throw error;
       
-      setNotes(data || []);
+      // Map database results to PatientNote type
+      const typedNotes: PatientNote[] = (data || []).map(note => ({
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        author: note.author,
+        date: note.created_at,  // Map created_at to date
+        type: note.note_type as "medical" | "caregiver" | "cognitive" | "other",  // Map note_type to type with proper typing
+        patient_id: note.patient_id,
+        created_at: note.created_at,
+        note_type: note.note_type
+      }));
+      
+      setNotes(typedNotes);
     } catch (error) {
       console.error('Error fetching notes:', error);
       toast({
@@ -259,7 +285,13 @@ export default function PatientDetail() {
 
       if (error) throw error;
 
-      setCareTasks([...careTasks, data[0]]);
+      // Create properly typed task from returned data
+      const newTaskWithType: CareTask = {
+        ...data[0],
+        status: data[0].status as "pending" | "completed" | "overdue"
+      };
+      
+      setCareTasks([...careTasks, newTaskWithType]);
       
       // Reset form
       setNewTask({
@@ -460,11 +492,17 @@ export default function PatientDetail() {
 
       if (error) throw error;
 
-      // Format the note to match the existing notes structure
-      const formattedNote = {
-        ...data[0],
-        type: data[0].note_type,
-        date: data[0].created_at
+      // Format the note to match PatientNote interface
+      const formattedNote: PatientNote = {
+        id: data[0].id,
+        title: data[0].title,
+        content: data[0].content,
+        author: data[0].author,
+        date: data[0].created_at,
+        type: data[0].note_type as "medical" | "caregiver" | "cognitive" | "other",
+        patient_id: data[0].patient_id,
+        created_at: data[0].created_at,
+        note_type: data[0].note_type
       };
 
       setNotes([formattedNote, ...notes]);
@@ -473,7 +511,7 @@ export default function PatientDetail() {
       setNewNote({
         title: '',
         content: '',
-        type: 'caregiver',
+        type: 'caregiver' as "medical" | "caregiver" | "cognitive" | "other",
         author: ''
       });
       
