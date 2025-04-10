@@ -126,25 +126,6 @@ export default function Chat() {
             </AlertDescription>
           </Alert>
         )}
-
-        {hasOpenAI && (
-          <Alert className="mb-6 bg-green-50 border-green-200">
-            <Brain className="h-4 w-4" />
-            <AlertTitle>Using OpenAI GPT</AlertTitle>
-            <AlertDescription className="flex flex-col gap-2">
-              <p>The chat is now using OpenAI's GPT model for responses.</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="bg-white/70 w-fit"
-                onClick={() => setOpenApiKeyDialogOpen(true)}
-              >
-                <Key className="h-4 w-4 mr-2" />
-                Manage API Key
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
         
         <PatientAIAssistant />
         

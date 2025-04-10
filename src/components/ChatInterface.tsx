@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +24,6 @@ type Message = {
   metadata?: Record<string, any>;
 };
 
-// Define patient context interface with the correct stage type
 interface PatientContext {
   patient: {
     id: string;
@@ -38,12 +36,10 @@ interface PatientContext {
   caseStudy: string;
 }
 
-// Helper function to validate stage value
 const validateStage = (stage: string): "early" | "moderate" | "advanced" => {
   if (stage === "early" || stage === "moderate" || stage === "advanced") {
     return stage;
   }
-  // Default to "moderate" if the value doesn't match the expected literals
   console.warn(`Invalid stage value: ${stage}. Defaulting to "moderate".`);
   return "moderate";
 };
@@ -85,7 +81,6 @@ export default function ChatInterface() {
     scrollToBottom();
   }, [messages]);
 
-  // Listen for patient data loaded event
   useEffect(() => {
     const handlePatientDataLoaded = (event: CustomEvent<PatientDataEvent>) => {
       const { patient, caseStudy } = event.detail;
@@ -93,16 +88,13 @@ export default function ChatInterface() {
       setPatientContext({
         patient: {
           ...patient,
-          // Validate and convert stage to the correct type
           stage: validateStage(patient.stage)
         },
         caseStudy
       });
       
-      // Generate patient-specific sample questions
       generatePatientSpecificQuestions(patient, caseStudy);
       
-      // Add system message indicating patient data loaded
       const systemMessage: Message = {
         id: Date.now().toString(),
         content: `${patient.name}'s data has been loaded. You can now ask questions specific to this patient.`,
@@ -122,10 +114,7 @@ export default function ChatInterface() {
     };
   }, []);
 
-  // Generate patient-specific questions based on case study
   const generatePatientSpecificQuestions = (patient: any, caseStudy: string) => {
-    // In a real implementation, this would use AI to generate relevant questions
-    // For now, we'll create some templated questions based on the patient stage
     const baseQuestions = [
       `What medications is ${patient.name} currently taking?`,
       `What are the best activities for ${patient.name} at their current stage?`,
@@ -134,7 +123,6 @@ export default function ChatInterface() {
       `What memory exercises would help ${patient.name} the most?`,
     ];
 
-    // Add stage-specific questions
     if (patient.stage === "early") {
       baseQuestions.push(`What strategies can help ${patient.name} maintain independence?`);
       baseQuestions.push(`What early interventions are recommended for ${patient.name}?`);
@@ -195,7 +183,6 @@ export default function ChatInterface() {
       let prompt = content;
       
       if (patientContext) {
-        // Create a detailed prompt with patient context
         const { patient, caseStudy } = patientContext;
         prompt = `Context: This is about patient ${patient.name} who has ${patient.diagnosis} in ${patient.stage} stage. 
         Age: ${patient.age}
@@ -452,7 +439,7 @@ export default function ChatInterface() {
           </Button>
         </div>
       )}
-
+      
       <Tabs 
         defaultValue="chat" 
         value={activeTab} 
