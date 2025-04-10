@@ -13,7 +13,7 @@ const modelInstances: Record<string, any> = {};
 
 // Default model configuration
 const DEFAULT_MODEL = {
-  name: 'mistralai/Mistral-7B-Instruct-v0.3',
+  name: 'meta-llama/llama-4-scout:free',
   task: 'text-generation' as PipelineType,
   config: {
     max_new_tokens: 512,
@@ -24,9 +24,13 @@ const DEFAULT_MODEL = {
   }
 };
 
-// Format the prompt for Mistral model
-function formatMistralPrompt(prompt: string): string {
-  return `<s>[INST] ${prompt} [/INST]`;
+// Format the prompt for Llama model
+function formatPrompt(prompt: string): string {
+  return `<|system|>
+You are a helpful AI assistant specialized in Alzheimer's and dementia care.
+<|user|>
+${prompt}
+<|assistant|>`;
 }
 
 // Get the Hugging Face token
@@ -89,7 +93,7 @@ export async function authenticateWithCLI(): Promise<boolean> {
 
 export async function getModelResponse(prompt: string): Promise<string> {
   try {
-    console.log(`Using Mistral model with permanent token`);
+    console.log(`Using Llama model with permanent token`);
     
     // Check if the prompt contains patient context
     const isPatientQuery = prompt.toLowerCase().includes('context: this is about patient');
@@ -100,16 +104,16 @@ export async function getModelResponse(prompt: string): Promise<string> {
     }
     
     // Get or create model instance
-    const modelKey = `mistral_${HUGGING_FACE_TOKEN}`;
+    const modelKey = `llama_${HUGGING_FACE_TOKEN}`;
     
     if (!modelInstances[modelKey]) {
-      console.log(`Loading Mistral model...`);
+      console.log(`Loading Llama model...`);
       try {
         // Set up authentication
         localStorage.setItem('huggingface-auth-token', HUGGING_FACE_TOKEN);
         
         // Create pipeline
-        console.log("Creating pipeline for Mistral model");
+        console.log("Creating pipeline for Llama model");
         
         // Attempt to use WebGPU for better performance if available
         try {
@@ -131,7 +135,7 @@ export async function getModelResponse(prompt: string): Promise<string> {
         // Provide detailed error message
         if (error instanceof Error) {
           if (error.message.includes('Unauthorized') || error.message.includes('401')) {
-            return "Authentication error. Your token may not have access to the Mistral model. Please check your Hugging Face token permissions.";
+            return "Authentication error. Your token may not have access to the Llama model. Please check your Hugging Face token permissions.";
           }
         }
         return simulateResponse(prompt, isPatientQuery);
@@ -143,12 +147,12 @@ export async function getModelResponse(prompt: string): Promise<string> {
     let result;
     
     try {
-      // Format prompt for Mistral
-      const formattedPrompt = formatMistralPrompt(prompt);
-      console.log("Using Mistral prompt format:", formattedPrompt);
+      // Format prompt for Llama
+      const formattedPrompt = formatPrompt(prompt);
+      console.log("Using Llama prompt format:", formattedPrompt);
       
       // Use model config
-      console.log(`Generating text with Mistral model using config:`, DEFAULT_MODEL.config);
+      console.log(`Generating text with Llama model using config:`, DEFAULT_MODEL.config);
       result = await generator(formattedPrompt, DEFAULT_MODEL.config);
       
       console.log("Raw model result:", result);
@@ -167,15 +171,15 @@ export async function getModelResponse(prompt: string): Promise<string> {
       response = result[0].generated_text || '';
       
       // Extract response from formatted output
-      if (response.includes('[/INST]')) {
-        response = response.split('[/INST]')[1].trim();
+      if (response.includes('<|assistant|>')) {
+        response = response.split('<|assistant|>')[1].trim();
       }
     } else if (result.generated_text) {
       response = result.generated_text;
       
       // Extract response from formatted output
-      if (response.includes('[/INST]')) {
-        response = response.split('[/INST]')[1].trim();
+      if (response.includes('<|assistant|>')) {
+        response = response.split('<|assistant|>')[1].trim();
       }
     }
     
@@ -267,6 +271,6 @@ function simulateResponse(prompt: string, isPatientQuery: boolean): string {
   } else if (promptLower.includes('exercise') || promptLower.includes('physical')) {
     return "Regular physical exercise may directly benefit brain cells by increasing blood and oxygen flow. Even moderate exercise like a brisk 30-minute walk several times a week can be beneficial for brain health.";
   } else {
-    return "I'm using the default response system. For more accurate and detailed responses, try selecting one of the AI models from the dropdown menu above.";
+    return "I'm using the default response system. For more accurate and detailed responses, please be specific about your Alzheimer's or memory care questions.";
   }
 }
