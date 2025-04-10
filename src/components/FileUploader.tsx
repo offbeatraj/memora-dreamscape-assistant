@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -81,18 +80,16 @@ export default function FileUploader() {
           .from('patient-files')
           .getPublicUrl(fileName);
 
-        // 2. Create record in patient_files table
-        const { error: dbError } = await supabase
-          .from('patient_files')
-          .insert({
-            patient_id: patientId,
-            file_name: file.name,
-            file_type: file.type,
-            file_size: file.size,
-            file_path: urlData?.publicUrl ?? fileName,
-            file_category: fileType,
-            notes: notes.trim() ? notes : null
-          });
+        // 2. Create record in patient_files table using RPC function
+        const { error: dbError } = await supabase.rpc('insert_patient_file', {
+          p_patient_id: patientId,
+          p_file_name: file.name,
+          p_file_type: file.type,
+          p_file_size: file.size,
+          p_file_path: urlData?.publicUrl ?? fileName,
+          p_file_category: fileType,
+          p_notes: notes.trim() ? notes : null
+        });
         
         if (dbError) {
           throw dbError;

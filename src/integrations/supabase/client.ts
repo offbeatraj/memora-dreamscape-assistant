@@ -38,20 +38,17 @@ export const uploadPatientFile = async (
       .from('patient-files')
       .getPublicUrl(fileName);
 
-    // Create record in database
-    const { data, error } = await supabase
-      .from('patient_files')
-      .insert({
-        patient_id: patientId,
-        file_name: file.name,
-        file_type: file.type,
-        file_size: file.size,
-        file_path: urlData?.publicUrl ?? fileName,
-        file_category: fileCategory,
-        notes: notes || null
-      })
-      .select()
-      .single();
+    // Create record in database - using raw SQL query to bypass type issues
+    // until types are updated
+    const { data, error } = await supabase.rpc('create_patient_file', {
+      p_patient_id: patientId,
+      p_file_name: file.name,
+      p_file_type: file.type,
+      p_file_size: file.size,
+      p_file_path: urlData?.publicUrl ?? fileName,
+      p_file_category: fileCategory,
+      p_notes: notes || null
+    });
     
     if (error) throw error;
     

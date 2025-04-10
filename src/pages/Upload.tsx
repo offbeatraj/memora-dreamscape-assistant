@@ -29,12 +29,9 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Get the 5 most recent files
+      // Use raw SQL query to get the data
       const { data, error } = await supabase
-        .from('patient_files')
-        .select('*, patients!inner(name)')
-        .order('upload_date', { ascending: false })
-        .limit(5);
+        .rpc('get_recent_files', { limit_count: 5 });
       
       if (error) throw error;
       
@@ -128,7 +125,7 @@ export default function UploadPage() {
                     {recentFiles.map((file) => (
                       <TableRow key={file.id}>
                         <TableCell className="font-medium">{file.file_name}</TableCell>
-                        <TableCell>{file.patients.name}</TableCell>
+                        <TableCell>{file.patient_name}</TableCell>
                         <TableCell>{file.file_category}</TableCell>
                         <TableCell>{formatFileSize(file.file_size)}</TableCell>
                         <TableCell>{new Date(file.upload_date).toLocaleDateString()}</TableCell>
