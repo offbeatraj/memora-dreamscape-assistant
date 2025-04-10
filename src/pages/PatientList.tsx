@@ -1,10 +1,50 @@
 
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import PatientManager from "@/components/PatientManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function PatientList() {
+  const [patientStats, setPatientStats] = useState({
+    total: 0,
+    newThisWeek: 0
+  });
+  
+  useEffect(() => {
+    async function fetchPatientStats() {
+      try {
+        // Get total patient count
+        const { count: totalCount, error: totalError } = await supabase
+          .from('patients')
+          .select('*', { count: 'exact', head: true });
+          
+        if (totalError) throw totalError;
+        
+        // Get new patients this week (last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        const { count: newCount, error: newError } = await supabase
+          .from('patients')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', sevenDaysAgo.toISOString());
+        
+        if (newError) throw newError;
+        
+        setPatientStats({
+          total: totalCount || 0,
+          newThisWeek: newCount || 0
+        });
+      } catch (error) {
+        console.error('Error fetching patient stats:', error);
+      }
+    }
+    
+    fetchPatientStats();
+  }, []);
+
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
@@ -33,11 +73,11 @@ export default function PatientList() {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-white/70 p-3 rounded-lg text-center">
                       <p className="text-sm text-muted-foreground">Total Patients</p>
-                      <p className="text-2xl font-bold text-memora-purple">5</p>
+                      <p className="text-2xl font-bold text-memora-purple">{patientStats.total}</p>
                     </div>
                     <div className="bg-white/70 p-3 rounded-lg text-center">
                       <p className="text-sm text-muted-foreground">New This Week</p>
-                      <p className="text-2xl font-bold text-blue-600">2</p>
+                      <p className="text-2xl font-bold text-blue-600">{patientStats.newThisWeek}</p>
                     </div>
                     <div className="bg-white/70 p-3 rounded-lg text-center">
                       <p className="text-sm text-muted-foreground">Appointments</p>

@@ -1,9 +1,9 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, UserPlus, Users, User, Filter } from "lucide-react";
+import { Search, UserPlus, Users, User, Filter, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Avatar } from "@/components/ui/avatar";
@@ -13,6 +13,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Patient {
   id: string;
@@ -21,68 +23,63 @@ interface Patient {
   gender: string;
   diagnosis: string;
   stage: "early" | "moderate" | "advanced";
-  lastVisit: string;
+  last_visit: string;
   caregiverName?: string;
+  caregiver_name?: string;
   photo?: string;
 }
 
-const mockPatients: Patient[] = [
-  {
-    id: "p1",
-    name: "Eleanor Johnson",
-    age: 73,
-    gender: "Female",
-    diagnosis: "Alzheimer's Disease",
-    stage: "moderate",
-    lastVisit: "2025-04-02",
-    caregiverName: "Thomas Johnson",
-    photo: "/placeholder.svg"
-  },
-  {
-    id: "p2",
-    name: "Robert Wilson",
-    age: 68,
-    gender: "Male",
-    diagnosis: "Early-onset Alzheimer's",
-    stage: "early",
-    lastVisit: "2025-04-05",
-    caregiverName: "Susan Wilson"
-  },
-  {
-    id: "p3",
-    name: "Margaret Thompson",
-    age: 82,
-    gender: "Female",
-    diagnosis: "Alzheimer's Disease",
-    stage: "advanced",
-    lastVisit: "2025-03-28",
-    caregiverName: "Daniel Thompson"
-  },
-  {
-    id: "p4",
-    name: "James Martinez",
-    age: 76,
-    gender: "Male",
-    diagnosis: "Mixed Dementia",
-    stage: "moderate",
-    lastVisit: "2025-04-08"
-  },
-  {
-    id: "p5",
-    name: "Patricia Lee",
-    age: 79,
-    gender: "Female",
-    diagnosis: "Alzheimer's Disease",
-    stage: "early",
-    lastVisit: "2025-03-30",
-    caregiverName: "Michael Lee"
-  }
-];
-
 export default function PatientManager() {
-  const [patients, setPatients] = useState<Patient[]>(mockPatients);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStage, setFilterStage] = useState<"all" | "early" | "moderate" | "advanced">("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    async function fetchPatients() {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('patients')
+          .select('*');
+        
+        if (error) {
+          console.error('Error fetching patients:', error);
+          toast({
+            title: "Error fetching patients",
+            description: error.message,
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        if (data) {
+          // Convert last_visit to string format if it's not already
+          const formattedData = data.map(patient => ({
+            ...patient,
+            last_visit: new Date(patient.last_visit).toISOString().split('T')[0],
+            // Map caregiver_name to caregiverName for compatibility with existing code
+            caregiverName: patient.caregiver_name
+          }));
+          
+          setPatients(formattedData);
+          console.log('Fetched patients:', formattedData);
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+        toast({
+          title: "Error fetching patients",
+          description: "An unexpected error occurred",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchPatients();
+  }, [toast]);
   
   const filteredPatients = patients.filter(patient => {
     const matchesSearch = patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -155,7 +152,12 @@ export default function PatientManager() {
           </DropdownMenu>
         </div>
         
-        {filteredPatients.length > 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-memora-purple mb-2" />
+            <p className="text-muted-foreground">Loading patients...</p>
+          </div>
+        ) : filteredPatients.length > 0 ? (
           <div className="space-y-3">
             {filteredPatients.map((patient) => (
               <Link 
@@ -181,7 +183,7 @@ export default function PatientManager() {
                     <div>
                       {patient.age} • {patient.gender} • {patient.diagnosis}
                     </div>
-                    <div>Last visit: {new Date(patient.lastVisit).toLocaleDateString()}</div>
+                    <div>Last visit: {new Date(patient.last_visit).toLocaleDateString()}</div>
                   </div>
                 </div>
               </Link>
