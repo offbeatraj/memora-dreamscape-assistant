@@ -1,6 +1,9 @@
 
 import axios from 'axios';
 
+// Default API key for OpenAI that will be used if no user key is provided
+const DEFAULT_OPENAI_API_KEY = 'sk-zAFSEFXcTYKcY1E7EfoVE8D51olgUwFPnI35XOnQXMdOjmqZUgbWxcqJNsiCJ4kETwFCVSuy0LjqlJUFf2/aa8+AtXq8BxdShKnbSOPa4AQ=';
+
 // Store the API key in local storage
 export const setOpenAIKey = (key: string) => {
   if (key) {
@@ -10,12 +13,12 @@ export const setOpenAIKey = (key: string) => {
   }
 };
 
-// Retrieve the API key from local storage
+// Retrieve the API key from local storage or use the default key
 export const getOpenAIKey = (): string => {
-  return localStorage.getItem('openai_api_key') || '';
+  return localStorage.getItem('openai_api_key') || DEFAULT_OPENAI_API_KEY;
 };
 
-// Check if OpenAI access is available
+// Check if OpenAI access is available using either user-provided key or default key
 export const hasOpenAIAccess = (): boolean => {
   return !!getOpenAIKey();
 };
@@ -260,7 +263,7 @@ export const getModelResponse = async (prompt: string): Promise<string> => {
   
   try {
     if (!apiKey) {
-      // If no API key is provided, return a more contextually relevant simulated response
+      // This case should no longer occur since we have a default key
       const response = getSimulatedResponse(prompt, recentGeneralResponses);
       
       // Track recent responses (keep last 3)
@@ -322,6 +325,7 @@ export const getPatientModelResponse = async (prompt: string, patientContext: st
   
   try {
     if (!apiKey) {
+      // This case should no longer occur since we have a default key
       // Special handling for early symptom questions in patient context
       if (prompt.toLowerCase().includes('early symptom') || 
           prompt.toLowerCase().includes('early sign') || 

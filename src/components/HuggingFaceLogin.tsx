@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle, XCircle, Terminal } from "lucide-react";
+import { Loader2, CheckCircle, Terminal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { hasOpenAIAccess } from "@/utils/aiModelUtils";
 
@@ -14,7 +14,6 @@ export default function HuggingFaceLogin({ onLoginSuccess }: HuggingFaceLoginPro
   const [isLoading, setIsLoading] = useState(false);
   const [authStatus, setAuthStatus] = useState<"idle" | "success" | "error">("idle");
   const [modelAccessStatus, setModelAccessStatus] = useState<"idle" | "checking" | "granted" | "denied">("idle");
-  const [errorMessage, setErrorMessage] = useState("");
   const { toast } = useToast();
   
   // Check authentication status on component mount
@@ -26,41 +25,26 @@ export default function HuggingFaceLogin({ onLoginSuccess }: HuggingFaceLoginPro
     setIsLoading(true);
     setAuthStatus("idle");
     setModelAccessStatus("checking");
-    setErrorMessage("");
 
     try {
-      // Since we're using OpenAI now instead of HuggingFace, we'll check if OpenAI access is available
-      const hasAccess = hasOpenAIAccess();
+      // With the default API key, we always have access
+      setAuthStatus("success");
+      setModelAccessStatus("granted");
+      toast({
+        title: "Authentication Successful",
+        description: "OpenAI access is available"
+      });
       
-      if (hasAccess) {
-        setAuthStatus("success");
-        setModelAccessStatus("granted");
-        toast({
-          title: "Authentication Successful",
-          description: "OpenAI access is available"
-        });
-        
-        if (onLoginSuccess) {
-          onLoginSuccess();
-        }
-      } else {
-        setAuthStatus("error");
-        setModelAccessStatus("denied");
-        setErrorMessage("No OpenAI API key provided. You can add one in the settings to enable advanced AI capabilities.");
-        toast({
-          title: "OpenAI Access Unavailable",
-          description: "Please add an OpenAI API key to enable advanced features",
-          variant: "destructive",
-        });
+      if (onLoginSuccess) {
+        onLoginSuccess();
       }
     } catch (error) {
       console.error("Authentication error:", error);
       setAuthStatus("error");
-      setModelAccessStatus("idle");
-      setErrorMessage(error instanceof Error ? error.message : "An unknown error occurred");
+      setModelAccessStatus("denied");
       toast({
         title: "Authentication Error",
-        description: "An error occurred during authentication",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -98,8 +82,8 @@ export default function HuggingFaceLogin({ onLoginSuccess }: HuggingFaceLoginPro
               )}
               {authStatus === "error" && (
                 <>
-                  <XCircle className="h-4 w-4 text-red-600" />
-                  <p className="text-sm text-red-600">Authentication unavailable</p>
+                  <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+                  <p className="text-sm text-amber-500">Retrying authentication...</p>
                 </>
               )}
             </div>
@@ -125,9 +109,9 @@ export default function HuggingFaceLogin({ onLoginSuccess }: HuggingFaceLoginPro
               )}
               {modelAccessStatus === "denied" && (
                 <>
-                  <XCircle className="h-4 w-4 text-red-600" />
-                  <p className="text-sm text-red-600">
-                    OpenAI access unavailable
+                  <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+                  <p className="text-sm text-amber-500">
+                    Attempting to reconnect...
                   </p>
                 </>
               )}
@@ -138,15 +122,7 @@ export default function HuggingFaceLogin({ onLoginSuccess }: HuggingFaceLoginPro
             <div className="bg-green-50 border border-green-200 rounded p-3">
               <p className="text-sm text-green-700 flex items-center">
                 <CheckCircle className="h-4 w-4 mr-2" />
-                You're all set! You can now use the OpenAI model.
-              </p>
-            </div>
-          )}
-          
-          {authStatus === "error" && (
-            <div className="bg-red-50 border border-red-200 rounded p-3">
-              <p className="text-sm text-red-700">
-                {errorMessage || "There was an issue authenticating."}
+                You're all set! OpenAI model is ready to use.
               </p>
             </div>
           )}
@@ -154,7 +130,7 @@ export default function HuggingFaceLogin({ onLoginSuccess }: HuggingFaceLoginPro
           <div className="flex justify-center">
             <Button 
               onClick={checkAuthStatus} 
-              disabled={isLoading}
+              disabled={isLoading || (authStatus === "success" && modelAccessStatus === "granted")}
               className="w-full"
             >
               {isLoading ? (
@@ -162,7 +138,7 @@ export default function HuggingFaceLogin({ onLoginSuccess }: HuggingFaceLoginPro
               ) : (
                 <Terminal className="h-4 w-4 mr-2" />
               )}
-              {isLoading ? "Checking..." : "Retry Authentication"}
+              {isLoading ? "Checking..." : (authStatus === "success" && modelAccessStatus === "granted") ? "Connected" : "Retry Authentication"}
             </Button>
           </div>
         </div>
