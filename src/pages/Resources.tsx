@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, BookOpen, FileText, Video, Download, External, Users, Brain, Calendar, Clock } from "lucide-react";
+import { Search, BookOpen, FileText, Video, Download, ExternalLink, Users, Brain, Calendar, Clock } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -134,7 +134,7 @@ export default function Resources() {
                     <p className="text-sm text-muted-foreground mb-3">{resource.description}</p>
                     <Button variant="outline" size="sm" asChild>
                       <Link to={resource.url} target="_blank" className="flex items-center">
-                        Visit <External className="h-4 w-4 ml-2" />
+                        Visit <ExternalLink className="h-4 w-4 ml-2" />
                       </Link>
                     </Button>
                   </div>
@@ -155,7 +155,7 @@ export default function Resources() {
                       <p className="text-sm text-muted-foreground mb-3">{resource.description}</p>
                       <Button variant="outline" size="sm" asChild>
                         <Link to={resource.url} target="_blank" className="flex items-center">
-                          Visit <External className="h-4 w-4 ml-2" />
+                          Visit <ExternalLink className="h-4 w-4 ml-2" />
                         </Link>
                       </Button>
                     </div>
@@ -176,7 +176,7 @@ export default function Resources() {
                       <p className="text-sm text-muted-foreground mb-3">{resource.description}</p>
                       <Button variant="outline" size="sm" asChild>
                         <Link to={resource.url} target="_blank" className="flex items-center">
-                          Visit <External className="h-4 w-4 ml-2" />
+                          Visit <ExternalLink className="h-4 w-4 ml-2" />
                         </Link>
                       </Button>
                     </div>
@@ -197,7 +197,7 @@ export default function Resources() {
                       <p className="text-sm text-muted-foreground mb-3">{resource.description}</p>
                       <Button variant="outline" size="sm" asChild>
                         <Link to={resource.url} target="_blank" className="flex items-center">
-                          Visit <External className="h-4 w-4 ml-2" />
+                          Visit <ExternalLink className="h-4 w-4 ml-2" />
                         </Link>
                       </Button>
                     </div>
