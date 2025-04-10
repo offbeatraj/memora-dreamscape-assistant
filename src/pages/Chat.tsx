@@ -9,7 +9,7 @@ import { useState } from "react";
 import HuggingFaceLogin from "@/components/HuggingFaceLogin";
 
 export default function Chat() {
-  const [showCLILogin, setShowCLILogin] = useState(false); // Changed to false since we have a token hardcoded now
+  const [showCLILogin, setShowCLILogin] = useState(false); // Using permanent token, no need for login UI
 
   const handleLoginSuccess = () => {
     setShowCLILogin(false);

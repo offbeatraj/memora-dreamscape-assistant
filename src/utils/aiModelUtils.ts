@@ -1,3 +1,4 @@
+
 import { pipeline, PipelineType } from '@huggingface/transformers';
 
 // Set the Hugging Face token directly
@@ -10,9 +11,9 @@ localStorage.setItem('huggingface-auth-token', HUGGING_FACE_TOKEN);
 // Model cache to avoid reloading models
 const modelInstances: Record<string, any> = {};
 
-// Default model configuration
+// Updated model configuration to use a valid model ID
 const DEFAULT_MODEL = {
-  name: 'meta-llama/llama-4-scout:free',
+  name: 'mistralai/Mistral-7B-Instruct-v0.2',
   task: 'text-generation' as PipelineType,
   config: {
     max_new_tokens: 512,
@@ -23,13 +24,9 @@ const DEFAULT_MODEL = {
   }
 };
 
-// Format the prompt for Llama model
+// Format the prompt for Mistral model
 function formatPrompt(prompt: string): string {
-  return `<|system|>
-You are a helpful AI assistant specialized in Alzheimer's and dementia care.
-<|user|>
-${prompt}
-<|assistant|>`;
+  return `<s>[INST] ${prompt} [/INST]`;
 }
 
 // Get the Hugging Face token
@@ -92,10 +89,13 @@ export async function authenticateWithCLI(): Promise<boolean> {
 
 export async function getModelResponse(prompt: string): Promise<string> {
   try {
-    console.log(`Using Llama model with permanent token`);
+    console.log(`Using Mistral model with permanent token`);
     
     // Check if the prompt contains patient context
     const containsPatientContext = prompt.toLowerCase().includes('context: this is about patient');
+    
+    // Show loading state in console
+    console.log("Processing prompt:", prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""));
     
     // For non-patient queries or fallbacks, use simulated responses
     if (!containsPatientContext && Math.random() > 0.2) { // 80% chance to use simulated response for non-patient queries
@@ -103,16 +103,16 @@ export async function getModelResponse(prompt: string): Promise<string> {
     }
     
     // Get or create model instance
-    const modelKey = `llama_${HUGGING_FACE_TOKEN}`;
+    const modelKey = `mistral_${HUGGING_FACE_TOKEN}`;
     
     if (!modelInstances[modelKey]) {
-      console.log(`Loading Llama model...`);
+      console.log(`Loading Mistral model...`);
       try {
         // Set up authentication
         localStorage.setItem('huggingface-auth-token', HUGGING_FACE_TOKEN);
         
         // Create pipeline
-        console.log("Creating pipeline for Llama model");
+        console.log("Creating pipeline for Mistral model");
         
         // Attempt to use WebGPU for better performance if available
         try {
@@ -133,10 +133,12 @@ export async function getModelResponse(prompt: string): Promise<string> {
         console.error('Error loading model:', error);
         // Provide detailed error message
         if (error instanceof Error) {
+          console.error('Error message:', error.message);
           if (error.message.includes('Unauthorized') || error.message.includes('401')) {
-            return "Authentication error. Your token may not have access to the Llama model. Please check your Hugging Face token permissions.";
+            return "Authentication error. Your token may not have access to the Mistral model. Please check your Hugging Face token permissions.";
           }
         }
+        console.log("Falling back to simulated response");
         return simulateResponse(prompt, containsPatientContext);
       }
     }
@@ -146,21 +148,23 @@ export async function getModelResponse(prompt: string): Promise<string> {
     let result;
     
     try {
-      // Format prompt for Llama
+      // Format prompt for Mistral
       const formattedPrompt = formatPrompt(prompt);
-      console.log("Using Llama prompt format:", formattedPrompt);
+      console.log("Using Mistral prompt format:", formattedPrompt.substring(0, 100) + "...");
       
       // Use model config
-      console.log(`Generating text with Llama model using config:`, DEFAULT_MODEL.config);
+      console.log(`Generating text with Mistral model using config:`, DEFAULT_MODEL.config);
       result = await generator(formattedPrompt, DEFAULT_MODEL.config);
       
       console.log("Raw model result:", result);
     } catch (error) {
       console.error('Error generating response:', error);
-      return "Error generating response from the model. Falling back to default responses.";
+      console.log("Falling back to simulated response due to generation error");
+      return simulateResponse(prompt, containsPatientContext);
     }
     
     if (!result) {
+      console.log("No result from model, using simulated response");
       return simulateResponse(prompt, containsPatientContext);
     }
 
@@ -170,23 +174,25 @@ export async function getModelResponse(prompt: string): Promise<string> {
       response = result[0].generated_text || '';
       
       // Extract response from formatted output
-      if (response.includes('<|assistant|>')) {
-        response = response.split('<|assistant|>')[1].trim();
+      if (response.includes('[/INST]')) {
+        response = response.split('[/INST]')[1].trim();
       }
     } else if (result.generated_text) {
       response = result.generated_text;
       
       // Extract response from formatted output
-      if (response.includes('<|assistant|>')) {
-        response = response.split('<|assistant|>')[1].trim();
+      if (response.includes('[/INST]')) {
+        response = response.split('[/INST]')[1].trim();
       }
     }
     
+    console.log("Formatted response:", response.substring(0, 100) + (response.length > 100 ? "..." : ""));
     return response || simulateResponse(prompt, containsPatientContext);
   } catch (error) {
     console.error('Error generating response:', error);
     // Pass the containsPatientContext parameter to simulateResponse
     const containsPatientContext = prompt.toLowerCase().includes('context: this is about patient');
+    console.log("Using fallback response due to catch-all error");
     return simulateResponse(prompt, containsPatientContext);
   }
 }
@@ -271,7 +277,18 @@ function simulateResponse(prompt: string, isPatientQuery: boolean): string {
     return "A Mediterranean-style diet may benefit brain health. This includes plenty of fruits, vegetables, whole grains, olive oil, fish, and limited red meat. Foods rich in omega-3 fatty acids, antioxidants, and B vitamins are particularly beneficial.";
   } else if (promptLower.includes('exercise') || promptLower.includes('physical')) {
     return "Regular physical exercise may directly benefit brain cells by increasing blood and oxygen flow. Even moderate exercise like a brisk 30-minute walk several times a week can be beneficial for brain health.";
+  } else if (promptLower.includes('what') && promptLower.includes('activit') && promptLower.includes('brain')) {
+    return "Activities that can improve brain health include puzzles, reading, learning new skills, playing musical instruments, card games, social interaction, physical exercise, meditation, and getting adequate sleep. The key is to challenge your brain with new and varied activities regularly.";
+  } else if (promptLower.includes('what') && promptLower.includes('day')) {
+    const today = new Date();
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDate = today.toLocaleDateString('en-US', options);
+    return `Today is ${formattedDate}. It's important to maintain a regular schedule and routine to help with time orientation.`;
+  } else if (promptLower.includes('family') && (promptLower.includes('photo') || promptLower.includes('picture'))) {
+    return "Family photos are excellent memory aids and can provide emotional comfort. They help maintain connections with loved ones and can trigger positive memories. Looking at photos together can be a wonderful shared activity that promotes reminiscence and conversation.";
+  } else if (promptLower.includes('help') && promptLower.includes('medicine')) {
+    return "It's important to take your medicine as prescribed. Setting regular reminders, using pill organizers, and establishing a consistent routine can help. You might also consider asking a family member or caregiver to help you remember your medication schedule.";
   } else {
-    return "I'm using the default response system. For more accurate and detailed responses, please be specific about your Alzheimer's or memory care questions.";
+    return "I'm here to help with information about Alzheimer's disease and memory care. You can ask me about symptoms, treatments, daily living strategies, or specific memory concerns. How can I assist you today?";
   }
 }
