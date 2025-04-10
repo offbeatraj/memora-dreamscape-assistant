@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { setHuggingFaceToken, getHuggingFaceToken } from "@/utils/aiModelUtils";
+import HuggingFaceLogin from "@/components/HuggingFaceLogin";
 
 // Model information including access requirements
 const modelInfo = {
@@ -27,6 +28,7 @@ export default function Chat() {
   const [aiModel, setAiModel] = useState("default");
   const [hfToken, setHfToken] = useState("");
   const [tokenVisible, setTokenVisible] = useState(false);
+  const [showCLILogin, setShowCLILogin] = useState(false);
 
   // Initialize the token input field with any existing token
   useEffect(() => {
@@ -72,7 +74,24 @@ export default function Chat() {
         variant: "destructive", // Changed from "warning" to "destructive" since that's what's available
       });
     }
+    
+    // Show CLI login specifically for Mistral model
+    if (value === "mistral") {
+      setShowCLILogin(true);
+    } else {
+      setShowCLILogin(false);
+    }
+    
     setAiModel(value);
+  };
+
+  const handleCLILoginSuccess = (token: string) => {
+    setHfToken(token);
+    setShowCLILogin(false);
+    toast({
+      title: "Mistral 7B Ready",
+      description: "You have successfully authenticated and have access to the Mistral 7B model.",
+    });
   };
 
   return (
@@ -168,6 +187,15 @@ export default function Chat() {
         </div>
         
         <PatientAIAssistant />
+        
+        {showCLILogin && (
+          <div className="mb-6">
+            <HuggingFaceLogin 
+              onLoginSuccess={handleCLILoginSuccess}
+              modelId="mistralai/Mistral-7B-Instruct-v0.3"
+            />
+          </div>
+        )}
         
         <Card className="glass-card">
           <CardContent className="p-4 md:p-6">

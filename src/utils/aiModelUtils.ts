@@ -1,3 +1,4 @@
+
 import { pipeline } from '@huggingface/transformers';
 
 // Model cache to avoid reloading models
@@ -68,6 +69,54 @@ export function getPatientData(patientId: string): any {
   return patientDataCache[patientId] || null;
 }
 
+// CLI Authentication for Hugging Face API
+export async function authenticateWithCLI(token: string): Promise<boolean> {
+  try {
+    if (!token || !token.trim()) {
+      console.error("Invalid token provided");
+      return false;
+    }
+
+    // Validate token by making a test request to Hugging Face API
+    const response = await fetch("https://huggingface.co/api/whoami", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      console.error("Token authentication failed:", response.status);
+      return false;
+    }
+
+    // Token is valid, save it
+    setHuggingFaceToken(token);
+    return true;
+  } catch (error) {
+    console.error("Authentication error:", error);
+    return false;
+  }
+}
+
+// Check if user has access to a specific model
+export async function checkModelAccess(modelId: string): Promise<boolean> {
+  try {
+    const token = getHuggingFaceToken();
+    if (!token) return false;
+
+    const response = await fetch(`https://huggingface.co/api/models/${modelId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error("Error checking model access:", error);
+    return false;
+  }
+}
+
 export async function getModelResponse(modelName: string, prompt: string): Promise<string> {
   try {
     console.log(`Using model: ${modelName}`);
@@ -109,10 +158,8 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
           localStorage.setItem('hf_api_token', hfToken);
         }
         
-        // Create pipeline with proper options - removed use_auth_token which isn't compatible
-        const options = {};
-        
-        modelInstances[modelKey] = await pipeline(config.task, config.name, options);
+        // Create pipeline with proper options - empty object as options parameter
+        modelInstances[modelKey] = await pipeline(config.task, config.name, {});
         
       } catch (error) {
         console.error('Error loading model:', error);
