@@ -100,6 +100,9 @@ const getSimulatedResponse = (userQuery: string): string => {
   } else if (query.includes('activity') || query.includes('exercise') || query.includes('routine') || query.includes('task')) {
     const responses = topicResponses.activities;
     return responses[Math.floor(Math.random() * responses.length)];
+  } else if (query.includes('day') || query.includes('date') || query.includes('time') || query.includes('today')) {
+    // Add responses for date/time questions
+    return `Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. It's important to keep track of the date for appointments and daily routines.`;
   } else {
     // Default to general responses
     const responses = topicResponses.general;
