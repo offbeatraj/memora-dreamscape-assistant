@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { useParams, useNavigate } from "react-router-dom";
@@ -1087,7 +1086,7 @@ export default function PatientDetail() {
                                 id="note-type" 
                                 className="w-full h-10 px-3 py-2 rounded-md border bg-white/70"
                                 value={newNote.type}
-                                onChange={(e) => setNewNote({...newNote, type: e.target.value})}
+                                onChange={(e) => setNewNote({...newNote, type: e.target.value as "medical" | "caregiver" | "cognitive" | "other"})}
                               >
                                 <option value="medical">Medical</option>
                                 <option value="caregiver">Caregiver</option>
