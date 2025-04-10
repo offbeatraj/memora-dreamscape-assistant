@@ -1,19 +1,11 @@
-
 import { pipeline, PipelineType } from '@huggingface/transformers';
-
-// Set the Hugging Face token directly
-const HUGGING_FACE_TOKEN = "k-or-v1-350957fbf0e7f9a8dc08e2c11377b40a500ef276b0671e0cd41c023be37ab88f";
-
-// Store token for persistence
-localStorage.setItem('hf_token', HUGGING_FACE_TOKEN);
-localStorage.setItem('huggingface-auth-token', HUGGING_FACE_TOKEN);
 
 // Model cache to avoid reloading models
 const modelInstances: Record<string, any> = {};
 
-// Updated model configuration to use a different, more accessible model
+// Default configuration for a freely accessible smaller model
 const DEFAULT_MODEL = {
-  name: 'facebook/opt-125m',
+  name: 'facebook/opt-125m', // Smaller model that's freely accessible
   task: 'text-generation' as PipelineType,
   config: {
     max_new_tokens: 512,
@@ -24,30 +16,29 @@ const DEFAULT_MODEL = {
   }
 };
 
+// We'll add support for OpenAI as an alternative
+let OPENAI_API_KEY = '';
+
 // Format the prompt for the model
 function formatPrompt(prompt: string): string {
   return `Question: ${prompt}\nAnswer:`;
 }
 
-// Get the Hugging Face token
-export function getHuggingFaceToken(): string {
-  return HUGGING_FACE_TOKEN;
+// Set OpenAI API key
+export function setOpenAIKey(key: string): void {
+  OPENAI_API_KEY = key;
+  localStorage.setItem('openai_key', key);
 }
 
-// Check if user has access to the model
-export async function checkModelAccess(): Promise<boolean> {
-  try {
-    const response = await fetch(`https://huggingface.co/api/models/${DEFAULT_MODEL.name}`, {
-      headers: {
-        Authorization: `Bearer ${HUGGING_FACE_TOKEN}`
-      }
-    });
+// Get OpenAI API key
+export function getOpenAIKey(): string {
+  const storedKey = localStorage.getItem('openai_key');
+  return OPENAI_API_KEY || storedKey || '';
+}
 
-    return response.ok;
-  } catch (error) {
-    console.error("Error checking model access:", error);
-    return false;
-  }
+// Check if we have OpenAI access
+export function hasOpenAIAccess(): boolean {
+  return !!getOpenAIKey();
 }
 
 // Patient data cache for context-aware responses
@@ -55,6 +46,7 @@ let patientDataCache: Record<string, any> = {};
 
 export function storePatientData(patientId: string, patientData: any) {
   patientDataCache[patientId] = patientData;
+  console.log("Patient data stored:", patientId, patientData);
   return true;
 }
 
@@ -62,28 +54,47 @@ export function getPatientData(patientId: string): any {
   return patientDataCache[patientId] || null;
 }
 
-// Authenticate with Hugging Face API
-export async function authenticateWithCLI(): Promise<boolean> {
+// Function to use OpenAI API
+async function getOpenAIResponse(prompt: string): Promise<string> {
   try {
-    console.log("Authenticating with permanent token");
-    
-    // Validate token by making a test request to Hugging Face API
-    const response = await fetch("https://huggingface.co/api/whoami", {
+    const apiKey = getOpenAIKey();
+    if (!apiKey) {
+      throw new Error("OpenAI API key is not set");
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${HUGGING_FACE_TOKEN}`
-      }
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an AI assistant specialized in Alzheimer\'s disease. Provide accurate, helpful, and compassionate information. If you\'re given patient context, tailor your response to their specific situation and stage of Alzheimer\'s.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 500
+      })
     });
 
     if (!response.ok) {
-      console.error("Token authentication failed:", response.status);
-      return false;
+      const error = await response.json();
+      throw new Error(error.error?.message || "Error calling OpenAI API");
     }
 
-    console.log("Authentication successful");
-    return true;
+    const data = await response.json();
+    return data.choices[0].message.content;
   } catch (error) {
-    console.error("Authentication error:", error);
-    return false;
+    console.error('OpenAI API error:', error);
+    throw error;
   }
 }
 
@@ -92,15 +103,25 @@ export async function getModelResponse(prompt: string): Promise<string> {
     // Check if the prompt contains patient context
     const containsPatientContext = prompt.toLowerCase().includes('context: this is about patient');
     
-    // Show loading state in console
     console.log("Processing prompt:", prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""));
     
-    // Always use simulated responses for now since we're having token issues
-    console.log("Using simulated response due to Hugging Face token issues");
+    // Try to use OpenAI first if available
+    if (hasOpenAIAccess()) {
+      try {
+        console.log("Using OpenAI API for response");
+        const response = await getOpenAIResponse(prompt);
+        return response;
+      } catch (error) {
+        console.error("OpenAI API error, falling back:", error);
+        // Fall back to simulated responses if OpenAI fails
+      }
+    }
+
+    // Print this warning to the console so user knows we're using simulated responses
+    console.log("Using simulated response due to model access limitations");
     return simulateResponse(prompt, containsPatientContext);
   } catch (error) {
     console.error('Error generating response:', error);
-    // Pass the containsPatientContext parameter to simulateResponse
     const containsPatientContext = prompt.toLowerCase().includes('context: this is about patient');
     console.log("Using fallback response due to catch-all error");
     return simulateResponse(prompt, containsPatientContext);
@@ -187,7 +208,15 @@ function simulateResponse(prompt: string, isPatientQuery: boolean): string {
     return "A Mediterranean-style diet may benefit brain health. This includes plenty of fruits, vegetables, whole grains, olive oil, fish, and limited red meat. Foods rich in omega-3 fatty acids, antioxidants, and B vitamins are particularly beneficial.";
   } else if (promptLower.includes('exercise') || promptLower.includes('physical')) {
     return "Regular physical exercise may directly benefit brain cells by increasing blood and oxygen flow. Even moderate exercise like a brisk 30-minute walk several times a week can be beneficial for brain health.";
-  } else if (promptLower.includes('what') && promptLower.includes('activit') && promptLower.includes('brain')) {
+  } else if (promptLower.includes('cause') || promptLower.includes('risk factor')) {
+    return "Alzheimer's disease is caused by complex brain changes following cell damage. Risk factors include aging, family history, genetics, heart disease, traumatic brain injury, and lifestyle factors. Scientists believe it's caused by a combination of genetic, lifestyle, and environmental factors that affect the brain over time.";
+  } else if (promptLower.includes('prevention') || promptLower.includes('prevent')) {
+    return "While there's no proven way to prevent Alzheimer's, research suggests that certain lifestyle changes may reduce risk. These include regular physical exercise, a healthy diet, mental and social engagement, good sleep habits, stress management, and managing health conditions like diabetes and heart disease.";
+  } else if (promptLower.includes('diagnosis') || promptLower.includes('diagnose')) {
+    return "Diagnosing Alzheimer's involves a comprehensive assessment including medical history, mental status testing, physical and neurological exams, blood tests, and brain imaging. Doctors look for patterns of memory loss and cognitive decline that are characteristic of the disease.";
+  }
+  
+  if (promptLower.includes('what') && promptLower.includes('activit') && promptLower.includes('brain')) {
     return "Activities that can improve brain health include puzzles, reading, learning new skills, playing musical instruments, card games, social interaction, physical exercise, meditation, and getting adequate sleep. The key is to challenge your brain with new and varied activities regularly.";
   } else if (promptLower.includes('what') && promptLower.includes('day')) {
     const today = new Date();
@@ -208,4 +237,3 @@ function simulateResponse(prompt: string, isPatientQuery: boolean): string {
     return "I'm here to help with information about Alzheimer's disease and memory care. You can ask me about symptoms, treatments, daily living strategies, or specific memory concerns. How can I assist you today?";
   }
 }
-

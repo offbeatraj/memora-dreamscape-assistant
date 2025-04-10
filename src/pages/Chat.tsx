@@ -2,18 +2,57 @@
 import Layout from "@/components/Layout";
 import ChatInterface from "@/components/ChatInterface";
 import PatientAIAssistant from "@/components/PatientAIAssistant";
-import { Brain } from "lucide-react";
+import { Brain, Key } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HuggingFaceLogin from "@/components/HuggingFaceLogin";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { getOpenAIKey, setOpenAIKey, hasOpenAIAccess } from "@/utils/aiModelUtils";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Chat() {
-  const [showCLILogin, setShowCLILogin] = useState(false); // Using permanent token, no need for login UI
+  const [showCLILogin, setShowCLILogin] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [openApiKeyDialogOpen, setOpenApiKeyDialogOpen] = useState(false);
+  const [hasOpenAI, setHasOpenAI] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if we have an OpenAI API key on component mount
+    const key = getOpenAIKey();
+    setApiKey(key);
+    setHasOpenAI(!!key);
+  }, []);
 
   const handleLoginSuccess = () => {
     setShowCLILogin(false);
+  };
+
+  const handleSaveApiKey = () => {
+    if (apiKey) {
+      setOpenAIKey(apiKey);
+      setHasOpenAI(true);
+      setOpenApiKeyDialogOpen(false);
+      toast({
+        title: "API Key Saved",
+        description: "Your OpenAI API key has been saved successfully.",
+      });
+    }
+  };
+
+  const handleClearApiKey = () => {
+    setApiKey("");
+    setOpenAIKey("");
+    setHasOpenAI(false);
+    toast({
+      title: "API Key Cleared",
+      description: "Your OpenAI API key has been removed.",
+    });
   };
 
   return (
@@ -31,13 +70,43 @@ export default function Chat() {
           </p>
         </div>
         
-        <Alert className="mb-6 bg-amber-50 border-amber-200">
-          <Brain className="h-4 w-4" />
-          <AlertTitle>Using Simulated Responses</AlertTitle>
-          <AlertDescription>
-            Due to model access limitations, we're currently using simulated responses. The assistant can still answer questions about Alzheimer's and provide personalized help based on patient data.
-          </AlertDescription>
-        </Alert>
+        {!hasOpenAI && (
+          <Alert className="mb-6 bg-amber-50 border-amber-200">
+            <Brain className="h-4 w-4" />
+            <AlertTitle>Using Simulated Responses</AlertTitle>
+            <AlertDescription className="flex flex-col gap-2">
+              <p>For full AI functionality, you can add your OpenAI API key to use the GPT model.</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-white w-fit"
+                onClick={() => setOpenApiKeyDialogOpen(true)}
+              >
+                <Key className="h-4 w-4 mr-2" />
+                Add OpenAI API Key
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {hasOpenAI && (
+          <Alert className="mb-6 bg-green-50 border-green-200">
+            <Brain className="h-4 w-4" />
+            <AlertTitle>Using OpenAI GPT</AlertTitle>
+            <AlertDescription className="flex flex-col gap-2">
+              <p>The chat is now using OpenAI's GPT model for responses.</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-white/70 w-fit"
+                onClick={() => setOpenApiKeyDialogOpen(true)}
+              >
+                <Key className="h-4 w-4 mr-2" />
+                Manage API Key
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         
         <PatientAIAssistant />
         
@@ -102,6 +171,38 @@ export default function Chat() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={openApiKeyDialogOpen} onOpenChange={setOpenApiKeyDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>OpenAI API Key</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="api-key">Enter your OpenAI API Key</Label>
+              <Input
+                id="api-key"
+                type="password"
+                placeholder="sk-..."
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                Your API key is stored locally in your browser and is never sent to our servers.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleSaveApiKey} className="flex-1">
+                Save Key
+              </Button>
+              <Button onClick={handleClearApiKey} variant="outline" className="flex-1">
+                Clear Key
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
