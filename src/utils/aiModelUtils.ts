@@ -1,4 +1,3 @@
-
 import { pipeline } from '@huggingface/transformers';
 
 // Model cache to avoid reloading models
@@ -24,7 +23,14 @@ const modelConfigs = {
   'mistral': {
     name: 'mistralai/Mistral-7B-Instruct-v0.3',
     task: 'text-generation',
-    restricted: true
+    restricted: true,
+    config: {
+      max_new_tokens: 512,
+      temperature: 0.7,
+      top_p: 0.95,
+      repetition_penalty: 1.1,
+      do_sample: true
+    }
   }
 };
 
@@ -133,6 +139,11 @@ export async function checkModelAccess(modelId: string): Promise<boolean> {
   }
 }
 
+// Format the prompt for Mistral model
+function formatMistralPrompt(prompt: string): string {
+  return `<s>[INST] ${prompt} [/INST]`;
+}
+
 export async function getModelResponse(modelName: string, prompt: string): Promise<string> {
   try {
     console.log(`Using model: ${modelName}`);
@@ -172,9 +183,25 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
           localStorage.setItem('huggingface-auth-token', hfToken);
         }
         
-        // Create pipeline without deprecated options
-        modelInstances[modelKey] = await pipeline(config.task, config.name, {});
+        // Create pipeline with WebGPU support if available
+        console.log("Creating pipeline for model", config.name);
         
+        // Attempt to use WebGPU for better performance if available
+        try {
+          modelInstances[modelKey] = await pipeline(
+            config.task, 
+            config.name, 
+            { device: "webgpu" }
+          );
+          console.log("Successfully loaded model with WebGPU acceleration");
+        } catch (gpuError) {
+          console.log("WebGPU not available or error occurred, falling back to default:", gpuError);
+          modelInstances[modelKey] = await pipeline(
+            config.task, 
+            config.name, 
+            {}
+          );
+        }
       } catch (error) {
         console.error('Error loading model:', error);
         // Provide more detailed error message
@@ -192,18 +219,30 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
     let result;
     
     try {
+      // Format prompt specifically for Mistral model
+      let formattedPrompt = prompt;
+      if (modelName === 'mistral') {
+        formattedPrompt = formatMistralPrompt(prompt);
+        console.log("Using Mistral prompt format:", formattedPrompt);
+      }
+      
       if (config.task === 'text-generation') {
-        result = await generator(prompt, {
-          max_length: 100,
+        const generationConfig = modelName === 'mistral' ? config.config : {
+          max_new_tokens: 100,
           temperature: 0.7,
-          no_repeat_ngram_size: 3,
-        });
+          do_sample: true
+        };
+        
+        console.log(`Generating text with ${modelName} model using config:`, generationConfig);
+        result = await generator(formattedPrompt, generationConfig);
       } else if (config.task === 'text2text-generation') {
         result = await generator(prompt);
       }
+      
+      console.log("Raw model result:", result);
     } catch (error) {
       console.error('Error generating response:', error);
-      return "Authentication error with the Hugging Face API. Please verify your token is valid and has the necessary permissions.";
+      return "Error generating response from the model. Please verify your token is valid and has the necessary permissions.";
     }
     
     if (!result) {
@@ -214,12 +253,25 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
     let response = '';
     if (Array.isArray(result)) {
       response = result[0].generated_text || '';
-      // Clean up response - remove the prompt part if it's included
-      if (response.startsWith(prompt)) {
-        response = response.substring(prompt.length).trim();
+      
+      // For Mistral model, extract the response part from the formatted output
+      if (modelName === 'mistral' && response.includes('[/INST]')) {
+        response = response.split('[/INST]')[1].trim();
+      } else {
+        // Clean up response - remove the prompt part if it's included
+        if (response.startsWith(prompt)) {
+          response = response.substring(prompt.length).trim();
+        } else if (response.startsWith(formattedPrompt)) {
+          response = response.substring(formattedPrompt.length).trim();
+        }
       }
     } else if (result.generated_text) {
       response = result.generated_text;
+      
+      // For Mistral model, extract the response part from the formatted output
+      if (modelName === 'mistral' && response.includes('[/INST]')) {
+        response = response.split('[/INST]')[1].trim();
+      }
     }
     
     return response || "I apologize, but I wasn't able to generate a meaningful response.";

@@ -77,6 +77,7 @@ export default function HuggingFaceLogin({ onLoginSuccess, modelId = "mistralai/
             description: `You don't have access to ${modelId}. Please request access on Hugging Face`,
             variant: "destructive",
           });
+          setErrorMessage(`You don't have access to ${modelId}. Please visit huggingface.co/${modelId} and request access to use this model.`);
         }
       } else {
         setAuthStatus("error");
@@ -242,6 +243,16 @@ export default function HuggingFaceLogin({ onLoginSuccess, modelId = "mistralai/
               <li>A valid access token with read permissions</li>
               <li>Model access granted on the Hugging Face platform</li>
             </ol>
+          </div>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded p-3">
+            <p className="text-xs text-blue-700 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span>
+                <strong>For Mistral 7B:</strong> This model requires specific access permissions from Hugging Face. 
+                If you don't have access yet, please request it at <a href="https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3" target="_blank" rel="noopener noreferrer" className="underline">Mistral-7B-Instruct-v0.3</a>.
+              </span>
+            </p>
           </div>
         </div>
       </CardContent>
