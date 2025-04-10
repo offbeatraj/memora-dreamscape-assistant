@@ -17,6 +17,7 @@ import { setHuggingFaceToken, getHuggingFaceToken } from "@/utils/aiModelUtils";
 export default function Chat() {
   const [aiModel, setAiModel] = useState("default");
   const [hfToken, setHfToken] = useState("");
+  const [tokenVisible, setTokenVisible] = useState(false);
 
   // Initialize the token input field with any existing token
   useEffect(() => {
@@ -27,10 +28,19 @@ export default function Chat() {
   }, []);
 
   const saveHuggingFaceToken = () => {
+    if (hfToken.trim().length < 5) {
+      toast({
+        title: "Invalid Token",
+        description: "Please enter a valid Hugging Face token.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (setHuggingFaceToken(hfToken)) {
       toast({
         title: "Token saved",
-        description: "Your Hugging Face token has been saved.",
+        description: "Your Hugging Face token has been saved successfully.",
       });
     } else {
       toast({
@@ -39,6 +49,10 @@ export default function Chat() {
         variant: "destructive",
       });
     }
+  };
+
+  const toggleTokenVisibility = () => {
+    setTokenVisible(!tokenVisible);
   };
 
   return (
@@ -57,7 +71,7 @@ export default function Chat() {
                   <span>Model: {aiModel === "default" ? "Default" : aiModel}</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[280px] p-0" align="end">
+              <PopoverContent className="w-[300px] p-0" align="end">
                 <div className="p-3">
                   <p className="text-sm font-medium mb-2">Select AI Model</p>
                   <Select
@@ -70,37 +84,53 @@ export default function Chat() {
                     <SelectContent>
                       <SelectItem value="default">Default</SelectItem>
                       <SelectItem value="gpt2">GPT-2</SelectItem>
-                      <SelectItem value="llama-2">LLAMA-2</SelectItem>
+                      <SelectItem value="llama-2">Llama-2</SelectItem>
                       <SelectItem value="flan-t5">FLAN-T5</SelectItem>
                     </SelectContent>
                   </Select>
                   
-                  {aiModel !== "default" && (
-                    <div className="mt-4">
-                      <div className="flex flex-col gap-2">
-                        <Label htmlFor="hfToken" className="text-sm font-medium">
-                          Hugging Face Access Token
-                        </Label>
-                        <div className="flex gap-2">
+                  <div className="mt-4">
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="hfToken" className="text-sm font-medium">
+                        Hugging Face Access Token
+                      </Label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
                           <Input
                             id="hfToken"
-                            type="password"
+                            type={tokenVisible ? "text" : "password"}
                             value={hfToken}
                             onChange={(e) => setHfToken(e.target.value)}
                             placeholder="hf_..."
-                            className="flex-1"
+                            className="pr-10"
                           />
-                          <Button size="sm" onClick={saveHuggingFaceToken} className="whitespace-nowrap">
-                            <Key className="h-3 w-3 mr-1" />
-                            Save
+                          <Button 
+                            type="button"
+                            variant="ghost" 
+                            size="sm"
+                            onClick={toggleTokenVisibility}
+                            className="absolute right-0 top-0 h-full px-3"
+                          >
+                            {tokenVisible ? "Hide" : "Show"}
                           </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Required to use Hugging Face models. Get your token at <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" className="underline">huggingface.co</a>
-                        </p>
+                        <Button size="sm" onClick={saveHuggingFaceToken} className="whitespace-nowrap">
+                          <Key className="h-3 w-3 mr-1" />
+                          Save
+                        </Button>
                       </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Required for all models except Default. Get your token at <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" className="underline">huggingface.co</a>
+                      </p>
+                      {aiModel !== "default" && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mt-2">
+                          <p className="text-xs text-yellow-700">
+                            Make sure your token has read access to the selected model. Save your token before selecting a model.
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>

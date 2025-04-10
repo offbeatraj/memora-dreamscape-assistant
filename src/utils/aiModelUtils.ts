@@ -11,34 +11,44 @@ const modelConfigs = {
     task: 'text-generation',
   },
   'llama-2': {
-    name: 'onnx-community/tiny-random-llama2',
+    name: 'TheBloke/Llama-2-7B-Chat-ONNX',
     task: 'text-generation',
   },
   'flan-t5': {
-    name: 'onnx-community/flan-t5-small',
+    name: 'google/flan-t5-small',
     task: 'text2text-generation',
   },
 };
 
-// Store the token in memory (not persisted after page reload)
-let hfToken: string | null = null;
-
-// Patient data cache for context-aware responses
-let patientDataCache: Record<string, any> = {};
-
+// Store the token in localStorage for persistence
 export function setHuggingFaceToken(token: string) {
-  hfToken = token;
-  // Clear model cache to reload with new token
-  Object.keys(modelInstances).forEach(key => {
-    delete modelInstances[key];
-  });
-  console.log("Hugging Face token set successfully. Models will reload with the new token.");
-  return true;
+  try {
+    if (token && token.trim()) {
+      localStorage.setItem('hf_token', token);
+      // Clear model cache to reload with new token
+      Object.keys(modelInstances).forEach(key => {
+        delete modelInstances[key];
+      });
+      console.log("Hugging Face token set successfully. Models will reload with the new token.");
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error saving token:", error);
+    return false;
+  }
 }
 
 export function getHuggingFaceToken(): string | null {
-  return hfToken;
+  try {
+    return localStorage.getItem('hf_token');
+  } catch {
+    return null;
+  }
 }
+
+// Patient data cache for context-aware responses
+let patientDataCache: Record<string, any> = {};
 
 export function storePatientData(patientId: string, patientData: any) {
   patientDataCache[patientId] = patientData;
@@ -67,40 +77,51 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
       return "I'm sorry, this AI model is not currently supported.";
     }
     
+    // Get the token
+    const hfToken = getHuggingFaceToken();
+    
+    // Check if token exists for non-default models
+    if (!hfToken) {
+      return "Please provide a valid Hugging Face access token in the settings to use this model.";
+    }
+    
     // Load or retrieve cached model
-    if (!modelInstances[modelName]) {
+    const modelKey = `${modelName}_${hfToken ? 'auth' : 'noauth'}`;
+    
+    if (!modelInstances[modelKey]) {
       console.log(`Loading model ${config.name}...`);
       try {
-        // Pass the token in options if we have it
-        const options: any = {};
-        if (hfToken) {
-          options.credentials = {
+        const options = {
+          credentials: {
             accessToken: hfToken
-          };
-        }
+          },
+          cache: true,
+        };
         
-        modelInstances[modelName] = await pipeline(config.task, config.name, options);
+        modelInstances[modelKey] = await pipeline(config.task, config.name, options);
       } catch (error) {
         console.error('Error loading model:', error);
-        if (!hfToken) {
-          return "Authentication error. Please provide a valid Hugging Face access token in the settings to use this model.";
-        }
         return "I'm sorry, there was an error loading the AI model. Please check your Hugging Face token or try a different model.";
       }
     }
     
     // Generate response using the model
-    const generator = modelInstances[modelName];
+    const generator = modelInstances[modelKey];
     let result;
     
-    if (config.task === 'text-generation') {
-      result = await generator(prompt, {
-        max_length: 100,
-        temperature: 0.7,
-        no_repeat_ngram_size: 3,
-      });
-    } else if (config.task === 'text2text-generation') {
-      result = await generator(prompt);
+    try {
+      if (config.task === 'text-generation') {
+        result = await generator(prompt, {
+          max_length: 100,
+          temperature: 0.7,
+          no_repeat_ngram_size: 3,
+        });
+      } else if (config.task === 'text2text-generation') {
+        result = await generator(prompt);
+      }
+    } catch (error) {
+      console.error('Error generating response:', error);
+      return "Authentication error with the Hugging Face API. Please verify your token is valid and has the necessary permissions.";
     }
     
     if (!result) {
