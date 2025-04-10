@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,7 +51,7 @@ const validateStage = (stage: string): "early" | "moderate" | "advanced" => {
 const initialMessages: Message[] = [
   {
     id: "1",
-    content: "Hello! I'm Memora, your personal memory assistant powered by Mistral 7B. How can I help you today? I can answer questions about Alzheimer's, provide daily support, or just chat.",
+    content: "Hello! I'm Memora, your personal memory assistant powered by Gemini 2.0 Flash. How can I help you today? I can answer questions about Alzheimer's, provide daily support, or just chat.",
     role: "assistant",
     timestamp: new Date(),
     type: "text"
@@ -315,7 +316,7 @@ export default function ChatInterface() {
         key={message.id}
         className={`flex ${
           message.role === "user" ? "justify-end" : "justify-start"
-        }`}
+        } mb-4`}
       >
         <div
           className={`flex gap-3 max-w-[80%] ${
@@ -328,14 +329,14 @@ export default function ChatInterface() {
             </div>
           </Avatar>
           <div
-            className={`rounded-2xl px-4 py-2 relative ${
+            className={`rounded-2xl px-4 py-3 relative ${
               message.role === "assistant"
-                ? "bg-white border border-memora-purple/20"
+                ? "bg-white border border-memora-purple/10 shadow-sm"
                 : "bg-memora-purple text-white"
-            } ${message.important ? "border-2 border-amber-400" : ""}`}
+            } ${message.important ? "border-l-4 border-amber-400" : ""}`}
           >
             {message.type === "image" && message.metadata?.imagePath && (
-              <div className="mb-2">
+              <div className="mb-3">
                 <img 
                   src={message.metadata.imagePath} 
                   alt={message.metadata.caption || "Shared image"} 
@@ -346,12 +347,12 @@ export default function ChatInterface() {
             )}
             
             {message.type === "health" && message.role === "assistant" && message.metadata && (
-              <div className="mb-2 p-2 bg-blue-50 rounded-lg">
-                <p className="text-xs font-medium text-blue-700">Health Assessment</p>
+              <div className="mb-3 p-2 bg-blue-50 rounded-lg">
+                <p className="text-sm font-medium text-blue-700">Health Assessment</p>
                 <ul className="mt-1 space-y-1">
                   {message.metadata.recommendations?.map((rec: string, i: number) => (
-                    <li key={i} className="text-xs flex items-center gap-1">
-                      <div className="w-1 h-1 rounded-full bg-blue-700"></div>
+                    <li key={i} className="text-sm flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-700"></div>
                       <span>{rec}</span>
                     </li>
                   ))}
@@ -360,21 +361,23 @@ export default function ChatInterface() {
             )}
             
             {message.type === "reminder" && message.metadata && (
-              <div className="mb-2 p-2 bg-purple-50 rounded-lg">
-                <p className="text-xs font-medium text-purple-700">Medication Reminder</p>
-                <p className="text-xs mt-1">{message.metadata.medicationName}: {message.metadata.nextDose}</p>
+              <div className="mb-3 p-2 bg-purple-50 rounded-lg">
+                <p className="text-sm font-medium text-purple-700">Medication Reminder</p>
+                <p className="text-sm mt-1">{message.metadata.medicationName}: {message.metadata.nextDose}</p>
               </div>
             )}
             
             <div className="prose prose-sm max-w-none">
-              {message.content}
+              {message.content.split('\n').map((paragraph, idx) => (
+                <p key={idx} className="mb-2 last:mb-0">{paragraph}</p>
+              ))}
             </div>
             
             {message.role === "assistant" && (
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="absolute -bottom-2 right-2 h-6 w-6 rounded-full p-0 opacity-70 hover:opacity-100"
+                className="absolute bottom-1 right-1 h-6 w-6 rounded-full p-0 opacity-70 hover:opacity-100"
                 onClick={() => markAsImportant(message.id)}
               >
                 <Star className={`h-4 w-4 ${message.important ? "fill-amber-400 text-amber-400" : "text-gray-400"}`} />
@@ -425,7 +428,7 @@ export default function ChatInterface() {
     <div className="flex flex-col h-[70vh] md:h-[80vh]">
       <div className="bg-green-100 mb-4 p-3 rounded-lg flex items-center">
         <Brain className="h-5 w-5 text-green-700 mr-2" />
-        <span className="text-sm">Using <span className="font-medium">Mistral 7B</span> model</span>
+        <span className="text-sm">Using <span className="font-medium">Gemini 2.0 Flash</span> model</span>
         {isLoading && <Loader2 className="h-4 w-4 ml-2 animate-spin text-green-700" />}
       </div>
       
@@ -467,18 +470,18 @@ export default function ChatInterface() {
         
         <TabsContent value="chat" className="flex-1 flex flex-col space-y-4">
           <Card className="flex-1 p-4 overflow-y-auto glass-card mb-4">
-            <div className="space-y-4 pb-4">
+            <div className="space-y-1 pb-2">
               {messages.map(renderMessage)}
               
               {isLoading && (
-                <div className="flex justify-start">
+                <div className="flex justify-start mb-4">
                   <div className="flex gap-3 max-w-[80%]">
                     <Avatar className="bg-memora-purple">
                       <div className="text-white">
                         <Bot size={20} />
                       </div>
                     </Avatar>
-                    <div className="rounded-2xl px-4 py-3 bg-white border border-memora-purple/20">
+                    <div className="rounded-2xl px-4 py-3 bg-white border border-memora-purple/10 shadow-sm">
                       <Loader2 className="h-5 w-5 animate-spin text-memora-purple" />
                     </div>
                   </div>
@@ -496,7 +499,7 @@ export default function ChatInterface() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleSampleQuestion(question)}
-                  className="text-xs bg-white/50 hover:bg-white transition-all duration-300 hover:shadow-md"
+                  className="text-xs bg-white/80 hover:bg-white transition-all duration-300 hover:shadow-sm"
                 >
                   {question}
                 </Button>
@@ -512,7 +515,7 @@ export default function ChatInterface() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleSampleQuestion(question)}
-                  className="text-xs bg-white/50 hover:bg-white"
+                  className="text-xs bg-white/80 hover:bg-white"
                 >
                   {question.length > 40 ? question.substring(0, 37) + "..." : question}
                 </Button>
@@ -521,7 +524,7 @@ export default function ChatInterface() {
                 variant="outline" 
                 size="sm" 
                 onClick={() => setActiveTab("questions")}
-                className="text-xs bg-white/50 hover:bg-white"
+                className="text-xs bg-white/80 hover:bg-white"
               >
                 <ChevronDown className="h-3 w-3 mr-1" />
                 More questions
@@ -535,7 +538,7 @@ export default function ChatInterface() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Type your message here..."
-                className="resize-none bg-white/70 text-lg pr-10"
+                className="resize-none bg-white/80 text-lg pr-10 shadow-sm"
                 disabled={isLoading}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
@@ -630,7 +633,7 @@ export default function ChatInterface() {
             <h3 className="text-lg font-medium mb-4">AI-Generated Insights</h3>
             <div className="space-y-4">
               {getInsights().map((insight, index) => (
-                <div key={index} className="bg-white/70 p-4 rounded-lg">
+                <div key={index} className="bg-white/80 p-4 rounded-lg shadow-sm">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium">{insight.title}</h4>
                     <div className={`flex items-center gap-1 text-sm ${
@@ -663,11 +666,11 @@ export default function ChatInterface() {
               <p className="text-sm text-muted-foreground mb-4">
                 These questions are generated based on the patient's profile and case study. Click on any question to use it in the chat.
               </p>
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {generatedPatientQuestions.map((question, index) => (
                   <div 
                     key={index} 
-                    className="bg-white/70 p-3 rounded-lg flex items-center justify-between cursor-pointer hover:bg-white transition-colors"
+                    className="bg-white/80 p-3 rounded-lg flex items-center justify-between cursor-pointer hover:bg-white transition-colors shadow-sm"
                     onClick={() => {
                       handleSampleQuestion(question);
                       setActiveTab("chat");
