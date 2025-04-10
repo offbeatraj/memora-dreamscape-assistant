@@ -1,3 +1,4 @@
+
 import { pipeline } from '@huggingface/transformers';
 
 // Model cache to avoid reloading models
@@ -112,7 +113,20 @@ export async function checkModelAccess(modelId: string): Promise<boolean> {
       }
     });
 
-    return response.ok;
+    if (!response.ok) {
+      // If we get a 401 or 403, it means the user doesn't have access
+      if (response.status === 401 || response.status === 403) {
+        console.error(`No access to model ${modelId}: ${response.status}`);
+        return false;
+      }
+      
+      // If the model doesn't exist (404) or other error, log it but treat as no access
+      console.error(`Error checking model access for ${modelId}: ${response.status}`);
+      return false;
+    }
+
+    // If we get here, the user has access
+    return true;
   } catch (error) {
     console.error("Error checking model access:", error);
     return false;

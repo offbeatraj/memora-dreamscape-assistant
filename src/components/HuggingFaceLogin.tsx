@@ -81,10 +81,10 @@ export default function HuggingFaceLogin({ onLoginSuccess, modelId = "mistralai/
       } else {
         setAuthStatus("error");
         setModelAccessStatus("idle");
-        setErrorMessage("Invalid Hugging Face token. Please check your token and try again.");
+        setErrorMessage("Invalid Hugging Face token or insufficient permissions. The token may not have read access to this model.");
         toast({
           title: "Authentication Failed",
-          description: "Invalid Hugging Face token",
+          description: "Invalid Hugging Face token or insufficient permissions",
           variant: "destructive",
         });
       }
