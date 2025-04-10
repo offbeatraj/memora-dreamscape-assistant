@@ -117,7 +117,7 @@ export default function PatientSelector({ onSelectPatient }: PatientSelectorProp
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="p-0" align="start" side="bottom" sideOffset={5} avoidCollisions={true} className="w-[300px]">
+        <PopoverContent className="p-0" align="start" side="bottom" sideOffset={5} avoidCollisions={true} width="300px">
           <Command>
             <CommandInput placeholder="Search patients..." />
             <CommandList>
