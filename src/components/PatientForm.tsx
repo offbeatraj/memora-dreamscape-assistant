@@ -13,6 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { supabase } from "@/integrations/supabase/client";
+import { useMutation } from "@tanstack/react-query";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -43,27 +45,50 @@ export default function PatientForm() {
     },
   });
 
-  const onSubmit = (data: FormValues) => {
-    setIsSubmitting(true);
-    
-    // In a real app, this would be a call to an API or database
-    // For now we'll just simulate adding a patient and redirect
-    setTimeout(() => {
-      // Generate a simple ID
-      const id = `p${Math.floor(Math.random() * 1000)}`;
-      const today = new Date().toISOString().split('T')[0];
+  const createPatient = useMutation({
+    mutationFn: async (data: FormValues) => {
+      const today = new Date().toISOString();
       
-      // This would normally save to a database
-      console.log("New patient data:", { id, ...data, lastVisit: today });
+      const { data: patient, error } = await supabase
+        .from('patients')
+        .insert([
+          { 
+            name: data.name,
+            age: data.age,
+            gender: data.gender,
+            diagnosis: data.diagnosis,
+            stage: data.stage,
+            caregiver_name: data.caregiverName || null,
+            notes: data.notes || null,
+            last_visit: today
+          }
+        ])
+        .select();
       
+      if (error) throw error;
+      return patient;
+    },
+    onSuccess: () => {
       toast({
         title: "Patient Created",
-        description: `${data.name} has been added to your patient list.`,
+        description: `Patient has been successfully added to your database.`,
       });
-      
-      setIsSubmitting(false);
       navigate("/patients");
-    }, 1000);
+    },
+    onError: (error) => {
+      console.error("Error creating patient:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem creating the patient. Please try again.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
+  });
+
+  const onSubmit = (data: FormValues) => {
+    setIsSubmitting(true);
+    createPatient.mutate(data);
   };
 
   return (
@@ -204,8 +229,12 @@ export default function PatientForm() {
             />
             
             <div className="flex justify-end pt-4">
-              <Button type="submit" disabled={isSubmitting} className="bg-memora-purple hover:bg-memora-purple-dark">
-                {isSubmitting ? "Saving..." : "Save Patient"}
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || createPatient.isPending} 
+                className="bg-memora-purple hover:bg-memora-purple-dark"
+              >
+                {(isSubmitting || createPatient.isPending) ? "Saving..." : "Save Patient"}
                 <Save className="ml-2 h-4 w-4" />
               </Button>
             </div>
