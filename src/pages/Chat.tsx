@@ -9,7 +9,7 @@ import { useState } from "react";
 import HuggingFaceLogin from "@/components/HuggingFaceLogin";
 
 export default function Chat() {
-  const [showCLILogin, setShowCLILogin] = useState(true);
+  const [showCLILogin, setShowCLILogin] = useState(false); // Changed to false since we have a token hardcoded now
 
   const handleLoginSuccess = () => {
     setShowCLILogin(false);

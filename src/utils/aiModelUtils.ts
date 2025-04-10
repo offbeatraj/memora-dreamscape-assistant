@@ -1,8 +1,7 @@
-
 import { pipeline, PipelineType } from '@huggingface/transformers';
 
 // Set the Hugging Face token directly
-const HUGGING_FACE_TOKEN = "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";
+const HUGGING_FACE_TOKEN = "k-or-v1-350957fbf0e7f9a8dc08e2c11377b40a500ef276b0671e0cd41c023be37ab88f";
 
 // Store token for persistence
 localStorage.setItem('hf_token', HUGGING_FACE_TOKEN);
@@ -186,7 +185,8 @@ export async function getModelResponse(prompt: string): Promise<string> {
     return response || simulateResponse(prompt, isPatientQuery);
   } catch (error) {
     console.error('Error generating response:', error);
-    return simulateResponse(prompt, isPatientQuery);
+    // Pass the isPatientQuery parameter to simulateResponse
+    return simulateResponse(prompt, prompt.toLowerCase().includes('context: this is about patient'));
   }
 }
 
