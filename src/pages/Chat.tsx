@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import HuggingFaceLogin from "@/components/HuggingFaceLogin";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Chat() {
   const [showCLILogin, setShowCLILogin] = useState(false); // Using permanent token, no need for login UI
@@ -29,6 +30,14 @@ export default function Chat() {
             Ask questions about Alzheimer's or request personalized help. Your AI companion can provide information, emotional support, and memory assistance.
           </p>
         </div>
+        
+        <Alert className="mb-6 bg-amber-50 border-amber-200">
+          <Brain className="h-4 w-4" />
+          <AlertTitle>Using Simulated Responses</AlertTitle>
+          <AlertDescription>
+            Due to model access limitations, we're currently using simulated responses. The assistant can still answer questions about Alzheimer's and provide personalized help based on patient data.
+          </AlertDescription>
+        </Alert>
         
         <PatientAIAssistant />
         
