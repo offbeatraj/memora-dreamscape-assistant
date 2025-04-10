@@ -38,26 +38,22 @@ export const uploadPatientFile = async (
       .from('patient-files')
       .getPublicUrl(fileName);
 
-    // Create record in database using RPC function
-    // We need to cast as unknown and then as any to bypass TypeScript errors
-    const rpc = supabase.rpc as unknown as (
-      fn: string, 
-      params: Record<string, any>
-    ) => Promise<{ data: any; error: any }>;
-    
-    const { data, error } = await rpc('create_patient_file', {
-      p_patient_id: patientId,
-      p_file_name: file.name,
-      p_file_type: file.type,
-      p_file_size: file.size,
-      p_file_path: urlData?.publicUrl ?? fileName,
-      p_file_category: fileCategory,
-      p_notes: notes || null
-    });
+    // Insert into patient_files table
+    const { data, error } = await supabase
+      .from('patient_files')
+      .insert({
+        patient_id: patientId,
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size,
+        file_path: urlData?.publicUrl ?? fileName,
+        file_category: fileCategory,
+        notes: notes || null
+      });
     
     if (error) throw error;
     
-    return data;
+    return urlData?.publicUrl;
   } catch (error) {
     console.error("Error uploading file:", error);
     throw error;
