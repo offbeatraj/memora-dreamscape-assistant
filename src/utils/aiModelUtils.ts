@@ -105,6 +105,21 @@ export const formatConversationTimestamp = (timestamp: string): string => {
   }
 };
 
+// Function to clean text formatting like markdown or other special characters
+const cleanTextFormatting = (text: string): string => {
+  // Remove markdown formatting if present
+  let cleanedText = text
+    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+    .replace(/\*(.*?)\*/g, '$1')     // Remove italic
+    .replace(/`(.*?)`/g, '$1')       // Remove code
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // Remove links
+    .replace(/#{1,6}\s?(.*)/g, '$1') // Remove headings
+    .replace(/\n\n/g, '\n')          // Normalize new lines
+    .trim();
+  
+  return cleanedText;
+};
+
 // Enhanced topic-based responses with much greater variety when no API is available
 const topicResponses: Record<string, string[]> = {
   memory: [
