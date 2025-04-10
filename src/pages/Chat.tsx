@@ -2,6 +2,7 @@
 import Layout from "@/components/Layout";
 import ChatInterface from "@/components/ChatInterface";
 import PatientAIAssistant from "@/components/PatientAIAssistant";
+import PatientSelector from "@/components/PatientSelector";
 import { Brain, Key } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,11 +16,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { getOpenAIKey, setOpenAIKey, hasOpenAIAccess } from "@/utils/aiModelUtils";
 import { useToast } from "@/components/ui/use-toast";
 
+interface Patient {
+  id: string;
+  name: string;
+  age: number;
+  diagnosis: string;
+  stage: string;
+  gender: string;
+}
+
 export default function Chat() {
   const [showCLILogin, setShowCLILogin] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [openApiKeyDialogOpen, setOpenApiKeyDialogOpen] = useState(false);
   const [hasOpenAI, setHasOpenAI] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -55,6 +66,32 @@ export default function Chat() {
     });
   };
 
+  const handlePatientSelect = (patient: Patient) => {
+    setSelectedPatient(patient);
+    
+    // Create the patient data loaded event
+    const patientDataEvent = new CustomEvent('patientDataLoaded', {
+      detail: {
+        patient: {
+          id: patient.id,
+          name: patient.name,
+          age: patient.age,
+          diagnosis: patient.diagnosis,
+          stage: patient.stage
+        },
+        caseStudy: `Patient ${patient.name} is ${patient.age} years old with ${patient.diagnosis} in the ${patient.stage} stage.`
+      }
+    });
+    
+    // Dispatch the event
+    document.dispatchEvent(patientDataEvent);
+    
+    toast({
+      title: "Patient Selected",
+      description: `You've selected ${patient.name} for this chat session.`,
+    });
+  };
+
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
@@ -64,6 +101,7 @@ export default function Chat() {
               <Brain className="h-5 w-5 text-memora-purple" />
               <h1 className="text-2xl font-bold">Memory Assistant Chat</h1>
             </div>
+            <PatientSelector onSelectPatient={handlePatientSelect} />
           </div>
           <p className="text-muted-foreground">
             Ask questions about Alzheimer's or request personalized help. Your AI companion can provide information, emotional support, and memory assistance.
