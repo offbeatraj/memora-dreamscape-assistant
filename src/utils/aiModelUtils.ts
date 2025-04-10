@@ -109,10 +109,8 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
           localStorage.setItem('hf_api_token', hfToken);
         }
         
-        // Create pipeline with proper authentication
-        const options = {
-          use_auth_token: hfToken || undefined,
-        };
+        // Create pipeline with proper options - removed use_auth_token which isn't compatible
+        const options = {};
         
         modelInstances[modelKey] = await pipeline(config.task, config.name, options);
         

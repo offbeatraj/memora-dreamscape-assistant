@@ -69,7 +69,7 @@ export default function Chat() {
       toast({
         title: "Token Required",
         description: `The ${modelInfo[value as keyof typeof modelInfo]?.name} model requires a Hugging Face token. Please add your token in settings.`,
-        variant: "warning",
+        variant: "destructive", // Changed from "warning" to "destructive" since that's what's available
       });
     }
     setAiModel(value);
