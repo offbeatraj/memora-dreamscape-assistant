@@ -38,8 +38,7 @@ export const uploadPatientFile = async (
       .from('patient-files')
       .getPublicUrl(fileName);
 
-    // Create record in database - using raw SQL query to bypass type issues
-    // until types are updated
+    // Create record in database using RPC function
     const { data, error } = await supabase.rpc('create_patient_file', {
       p_patient_id: patientId,
       p_file_name: file.name,
@@ -48,7 +47,7 @@ export const uploadPatientFile = async (
       p_file_path: urlData?.publicUrl ?? fileName,
       p_file_category: fileCategory,
       p_notes: notes || null
-    });
+    }) as any; // Using type assertion to bypass TypeScript errors
     
     if (error) throw error;
     
