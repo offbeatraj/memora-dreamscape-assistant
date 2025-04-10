@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 // Default API key for OpenAI that will be used if no user key is provided
@@ -43,16 +42,67 @@ export const getPatientData = (patientId: string): any => {
   }
 };
 
-// Clean text of any markdown syntax or asterisks
-const cleanTextFormatting = (text: string): string => {
-  // Replace markdown bold/italic syntax with plain text
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
-    .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
-    .replace(/__(.*?)__/g, '$1')     // Remove underscore bold markdown
-    .replace(/_(.*?)_/g, '$1')       // Remove underscore italic markdown
-    .replace(/`(.*?)`/g, '$1')       // Remove code markdown
-    .trim();
+// Store conversation history for specific patients
+export const storePatientConversation = (patientId: string, conversation: any): void => {
+  try {
+    // Get existing conversations or initialize empty array
+    const existingData = localStorage.getItem(`conversations_${patientId}`);
+    const conversations = existingData ? JSON.parse(existingData) : [];
+    
+    // Add new conversation with timestamp
+    conversations.unshift({
+      ...conversation,
+      timestamp: new Date().toISOString(),
+      id: crypto.randomUUID()
+    });
+    
+    // Keep only the most recent 10 conversations
+    const limitedConversations = conversations.slice(0, 10);
+    
+    // Save back to localStorage
+    localStorage.setItem(`conversations_${patientId}`, JSON.stringify(limitedConversations));
+  } catch (error) {
+    console.error('Error storing conversation:', error);
+  }
+};
+
+// Get patient-specific conversation history
+export const getPatientConversations = (patientId: string): any[] => {
+  try {
+    const data = localStorage.getItem(`conversations_${patientId}`);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Error retrieving conversations:', error);
+    return [];
+  }
+};
+
+// Format timestamp to human-readable format
+export const formatConversationTimestamp = (timestamp: string): string => {
+  try {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return `Today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } else if (diffDays === 1) {
+      return `Yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'long' }) + 
+        ` at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } else {
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+  } catch (error) {
+    console.error('Error formatting timestamp:', error);
+    return 'Unknown time';
+  }
 };
 
 // Enhanced topic-based responses with much greater variety when no API is available

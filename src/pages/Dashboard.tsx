@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PatientAIAssistant from "@/components/PatientAIAssistant";
 import PatientWellbeingQuestionnaire from "@/components/PatientWellbeingQuestionnaire";
 import { useToast } from "@/components/ui/use-toast";
+import { getPatientConversations, formatConversationTimestamp } from "@/utils/aiModelUtils";
 
 interface Patient {
   id: string;
@@ -106,9 +107,8 @@ export default function Dashboard() {
       
       setPatientFiles(formattedFiles);
       
-      // In a real app, we'd fetch actual conversations
-      // For now, generate mock conversations based on patient data
-      generatePatientConversations(patientId);
+      // Fetch actual patient conversations from storage
+      fetchPatientConversations(patientId);
       
       // Generate wellbeing scores (would be from actual questionnaire results in production)
       generateWellbeingScores();
@@ -138,8 +138,29 @@ export default function Dashboard() {
     return "low";
   };
   
-  // Generate mock conversations based on patient data
-  const generatePatientConversations = (patientId: string) => {
+  // Fetch patient conversations from storage
+  const fetchPatientConversations = (patientId: string) => {
+    // Get stored conversations for this patient
+    const storedConversations = getPatientConversations(patientId);
+    
+    if (storedConversations && storedConversations.length > 0) {
+      // Format the conversations for display
+      const formattedConversations = storedConversations.map(conv => ({
+        id: conv.id || crypto.randomUUID(),
+        title: conv.title || "AI Assistant",
+        message: conv.message || conv.content || "",
+        timestamp: formatConversationTimestamp(conv.timestamp)
+      }));
+      
+      setPatientConversations(formattedConversations);
+    } else {
+      // If no stored conversations, create fallback conversations
+      createFallbackConversations(patientId);
+    }
+  };
+  
+  // Create fallback conversations if none exist
+  const createFallbackConversations = (patientId: string) => {
     // In production, these would come from a database or chat history
     const mockConversations = [
       {
@@ -196,6 +217,24 @@ export default function Dashboard() {
       description: "The patient's wellbeing summary has been updated based on the questionnaire.",
     });
   };
+
+  // Listen for new conversations from PatientAIAssistant
+  useEffect(() => {
+    const handleNewConversation = (event: CustomEvent) => {
+      if (selectedPatient && event.detail.patientId === selectedPatient.id) {
+        // Refresh conversations when a new one is added
+        fetchPatientConversations(selectedPatient.id);
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('newPatientConversation', handleNewConversation as EventListener);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('newPatientConversation', handleNewConversation as EventListener);
+    };
+  }, [selectedPatient]);
 
   return (
     <Layout>
@@ -302,11 +341,19 @@ export default function Dashboard() {
                             </div>
                           </div>
                         ))}
+                        
+                        {patientConversations.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                            <p>No conversations with this patient yet.</p>
+                            <p className="text-sm mt-1">Try using the AI Assistant above to start a conversation.</p>
+                          </div>
+                        )}
                       </div>
                     </TabsContent>
                     <TabsContent value="recent">
                       <div className="space-y-3">
-                        {patientConversations.slice(2, 4).map((conv) => (
+                        {patientConversations.slice(0, 4).map((conv) => (
                           <div key={conv.id} className="bg-white/70 p-3 rounded-lg">
                             <div className="flex items-start gap-3">
                               <div className="bg-memora-purple/20 p-2 rounded-full shrink-0">
@@ -320,6 +367,14 @@ export default function Dashboard() {
                             </div>
                           </div>
                         ))}
+                        
+                        {patientConversations.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                            <p>No conversations with this patient yet.</p>
+                            <p className="text-sm mt-1">Try using the AI Assistant above to start a conversation.</p>
+                          </div>
+                        )}
                       </div>
                     </TabsContent>
                   </Tabs>

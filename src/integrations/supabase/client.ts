@@ -59,3 +59,36 @@ export const uploadPatientFile = async (
     throw error;
   }
 };
+
+// Emit an event when a new patient conversation occurs
+export const savePatientConversation = (patientId: string, message: string, title: string = "AI Assistant") => {
+  try {
+    // Create a conversation object
+    const conversation = {
+      patientId,
+      message,
+      title,
+      timestamp: new Date().toISOString(),
+    };
+    
+    // Import and use the storage function from aiModelUtils
+    import('@/utils/aiModelUtils').then(module => {
+      module.storePatientConversation(patientId, conversation);
+    });
+    
+    // Dispatch an event to notify other components
+    const event = new CustomEvent('newPatientConversation', { 
+      detail: { 
+        patientId,
+        conversation 
+      }
+    });
+    
+    document.dispatchEvent(event);
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving patient conversation:', error);
+    return false;
+  }
+};
