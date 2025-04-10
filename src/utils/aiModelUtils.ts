@@ -82,6 +82,8 @@ export function getPatientData(patientId: string): any {
 // CLI Authentication for Hugging Face API
 export async function authenticateWithCLI(token: string): Promise<boolean> {
   try {
+    console.log("Attempting authentication with token:", token.substring(0, 4) + "...");
+    
     if (!token || !token.trim() || !token.startsWith("hf_")) {
       console.error("Invalid token format provided");
       return false;
@@ -157,7 +159,7 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
       return simulateResponse(prompt, isPatientQuery);
     }
     
-    const config = modelConfigs[modelName];
+    const config = modelConfigs[modelName as keyof typeof modelConfigs];
     if (!config) {
       console.error(`Model ${modelName} not supported`);
       return "I'm sorry, this AI model is not currently supported.";
@@ -221,10 +223,10 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
     
     try {
       // Format prompt specifically for Mistral model
-      let formattedPrompt = prompt;
+      let formattedPromptToUse = prompt;
       if (modelName === 'mistral') {
-        formattedPrompt = formatMistralPrompt(prompt);
-        console.log("Using Mistral prompt format:", formattedPrompt);
+        formattedPromptToUse = formatMistralPrompt(prompt);
+        console.log("Using Mistral prompt format:", formattedPromptToUse);
       }
       
       if (config.task === 'text-generation') {
@@ -235,7 +237,7 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
         };
         
         console.log(`Generating text with ${modelName} model using config:`, generationConfig);
-        result = await generator(formattedPrompt, generationConfig);
+        result = await generator(formattedPromptToUse, generationConfig);
       } else if (config.task === 'text2text-generation') {
         result = await generator(prompt);
       }
