@@ -1,3 +1,4 @@
+
 import { pipeline, PipelineType } from '@huggingface/transformers';
 
 // Set the Hugging Face token directly
