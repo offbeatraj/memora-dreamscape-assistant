@@ -20,6 +20,26 @@ export const hasOpenAIAccess = (): boolean => {
   return !!getOpenAIKey();
 };
 
+// Store patient data for context aware responses
+export const storePatientData = (patientId: string, patientData: any): void => {
+  try {
+    localStorage.setItem(`patient_${patientId}`, JSON.stringify(patientData));
+  } catch (error) {
+    console.error('Error storing patient data:', error);
+  }
+};
+
+// Get stored patient data
+export const getPatientData = (patientId: string): any => {
+  try {
+    const data = localStorage.getItem(`patient_${patientId}`);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error('Error retrieving patient data:', error);
+    return null;
+  }
+};
+
 // Clean text of any markdown syntax or asterisks
 const cleanTextFormatting = (text: string): string => {
   // Replace markdown bold/italic syntax with plain text
