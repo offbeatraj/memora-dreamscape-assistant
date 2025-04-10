@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +10,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getModelResponse } from "@/utils/aiModelUtils";
+import { PatientDataEvent } from "@/components/PatientAIAssistant";
+import QuestionGenerator from "@/components/QuestionGenerator";
 
 type MessageType = "text" | "image" | "reminder" | "health" | "question";
 
@@ -21,6 +24,19 @@ type Message = {
   type?: MessageType;
   metadata?: Record<string, any>;
 };
+
+// Define patient context interface
+interface PatientContext {
+  patient: {
+    id: string;
+    name: string;
+    age: number;
+    diagnosis: string;
+    stage: "early" | "moderate" | "advanced";
+    caseStudy?: string;
+  } | null;
+  caseStudy: string;
+}
 
 const initialMessages: Message[] = [
   {
@@ -48,9 +64,10 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"chat" | "insights">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "insights" | "questions">("chat");
   const [attachmentType, setAttachmentType] = useState<"none" | "image" | "health" | "question">("none");
-  const [activePatient, setActivePatient] = useState<string | null>(null);
+  const [patientContext, setPatientContext] = useState<PatientContext | null>(null);
+  const [generatedPatientQuestions, setGeneratedPatientQuestions] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -61,6 +78,66 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Listen for patient data loaded event
+  useEffect(() => {
+    const handlePatientDataLoaded = (event: CustomEvent<PatientDataEvent>) => {
+      const { patient, caseStudy } = event.detail;
+      
+      setPatientContext({
+        patient,
+        caseStudy
+      });
+      
+      // Generate patient-specific sample questions
+      generatePatientSpecificQuestions(patient, caseStudy);
+      
+      // Add system message indicating patient data loaded
+      const systemMessage: Message = {
+        id: Date.now().toString(),
+        content: `${patient.name}'s data has been loaded. You can now ask questions specific to this patient.`,
+        role: "assistant",
+        timestamp: new Date(),
+        type: "text"
+      };
+      
+      setMessages(prev => [...prev, systemMessage]);
+      setActiveTab("questions");
+    };
+
+    document.addEventListener('patientDataLoaded', handlePatientDataLoaded as EventListener);
+    
+    return () => {
+      document.removeEventListener('patientDataLoaded', handlePatientDataLoaded as EventListener);
+    };
+  }, []);
+
+  // Generate patient-specific questions based on case study
+  const generatePatientSpecificQuestions = (patient: any, caseStudy: string) => {
+    // In a real implementation, this would use AI to generate relevant questions
+    // For now, we'll create some templated questions based on the patient stage
+    const baseQuestions = [
+      `What medications is ${patient.name} currently taking?`,
+      `What are the best activities for ${patient.name} at their current stage?`,
+      `What diet is recommended for ${patient.name}?`,
+      `What are the main symptoms that ${patient.name} is experiencing?`,
+      `What memory exercises would help ${patient.name} the most?`,
+    ];
+
+    // Add stage-specific questions
+    if (patient.stage === "early") {
+      baseQuestions.push(`What strategies can help ${patient.name} maintain independence?`);
+      baseQuestions.push(`What early interventions are recommended for ${patient.name}?`);
+    } else if (patient.stage === "moderate") {
+      baseQuestions.push(`What safety measures should be implemented for ${patient.name}?`);
+      baseQuestions.push(`How can we manage ${patient.name}'s daily routine effectively?`);
+    } else if (patient.stage === "advanced") {
+      baseQuestions.push(`What comfort measures are most important for ${patient.name}?`);
+      baseQuestions.push(`What are the best communication strategies with ${patient.name}?`);
+    }
+
+    setGeneratedPatientQuestions(baseQuestions);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,8 +184,14 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
     try {
       let prompt = content;
       
-      if (activePatient) {
-        prompt = `Context: This is about patient Eleanor Johnson who has Alzheimer's disease in moderate stage. Question: ${content}`;
+      if (patientContext) {
+        // Create a detailed prompt with patient context
+        const { patient, caseStudy } = patientContext;
+        prompt = `Context: This is about patient ${patient.name} who has ${patient.diagnosis} in ${patient.stage} stage. 
+        Age: ${patient.age}
+        Case Study Details: ${caseStudy}
+        
+        Question: ${content}`;
       }
       
       if (type === "image") {
@@ -198,12 +281,12 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
     });
   };
 
-  const loadPatientData = (patientId: string, patientName: string) => {
-    setActivePatient(patientId);
+  const clearPatientContext = () => {
+    setPatientContext(null);
     
     const systemMessage: Message = {
       id: Date.now().toString(),
-      content: `${patientName}'s data has been loaded. You can now ask questions specific to this patient.`,
+      content: "Patient data has been cleared. You're now in general conversation mode.",
       role: "assistant",
       timestamp: new Date(),
       type: "text"
@@ -212,8 +295,8 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
     setMessages((prev) => [...prev, systemMessage]);
     
     toast({
-      title: `Patient Loaded: ${patientName}`,
-      description: "You can now ask questions specific to this patient.",
+      title: "Patient Data Cleared",
+      description: "You have returned to general conversation mode.",
     });
   };
 
@@ -339,20 +422,20 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
         </div>
       )}
       
-      {activePatient && (
+      {patientContext && (
         <div className="bg-memora-purple/10 mb-4 p-3 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-2">
             <User className="h-5 w-5 text-memora-purple" />
-            <span className="font-medium text-sm">Patient Mode: Eleanor Johnson</span>
+            <span className="font-medium text-sm">Patient Mode: {patientContext.patient?.name}</span>
             <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200 text-xs">
-              Moderate Stage
+              {patientContext.patient?.stage.charAt(0).toUpperCase() + patientContext.patient?.stage.slice(1)} Stage
             </Badge>
           </div>
           <Button 
             variant="outline" 
             size="sm" 
             className="h-7"
-            onClick={() => setActivePatient(null)}
+            onClick={clearPatientContext}
           >
             <X className="h-3 w-3 mr-1" />
             Clear Patient
@@ -363,13 +446,18 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
       <Tabs 
         defaultValue="chat" 
         value={activeTab} 
-        onValueChange={(value) => setActiveTab(value as "chat" | "insights")}
+        onValueChange={(value) => setActiveTab(value as "chat" | "insights" | "questions")}
         className="w-full mb-4"
       >
-        <TabsList className="grid grid-cols-2 w-full mb-2">
+        <TabsList className="grid grid-cols-3 w-full mb-2">
           <TabsTrigger value="chat">Conversation</TabsTrigger>
           <TabsTrigger value="insights">AI Insights</TabsTrigger>
+          <TabsTrigger value="questions">
+            Patient Questions
+            {patientContext && <span className="ml-1 text-xs bg-memora-purple text-white rounded-full py-0.5 px-1.5">New</span>}
+          </TabsTrigger>
         </TabsList>
+        
         <TabsContent value="chat" className="flex-1 flex flex-col space-y-4">
           <Card className="flex-1 p-4 overflow-y-auto glass-card mb-4">
             <div className="space-y-4 pb-4">
@@ -393,7 +481,7 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
             </div>
           </Card>
           
-          {!activePatient && (
+          {!patientContext && (
             <div className="mb-4 flex flex-wrap gap-2">
               {sampleQuestions.map((question, index) => (
                 <Button
@@ -409,23 +497,27 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
             </div>
           )}
           
-          {activePatient && (
+          {patientContext && (
             <div className="mb-4 flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleSampleQuestion("What medications is Eleanor taking?")} 
-                className="text-xs bg-white/50 hover:bg-white">
-                What medications is she taking?
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleSampleQuestion("Show me Eleanor's diet plan")} 
-                className="text-xs bg-white/50 hover:bg-white">
-                Show diet plan
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleSampleQuestion("What activities are scheduled today?")} 
-                className="text-xs bg-white/50 hover:bg-white">
-                Today's activities
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleSampleQuestion("Set a medicine reminder for 7pm")} 
-                className="text-xs bg-white/50 hover:bg-white">
-                Set medicine reminder
+              {generatedPatientQuestions.slice(0, 4).map((question, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSampleQuestion(question)}
+                  className="text-xs bg-white/50 hover:bg-white"
+                >
+                  {question.length > 40 ? question.substring(0, 37) + "..." : question}
+                </Button>
+              ))}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setActiveTab("questions")}
+                className="text-xs bg-white/50 hover:bg-white"
+              >
+                <ChevronDown className="h-3 w-3 mr-1" />
+                More questions
               </Button>
             </div>
           )}
@@ -555,6 +647,36 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
               </p>
             </div>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="questions" className="flex-1">
+          {patientContext ? (
+            <Card className="glass-card p-4">
+              <h3 className="text-lg font-medium mb-2">Questions for {patientContext.patient?.name}</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                These questions are generated based on the patient's profile and case study. Click on any question to use it in the chat.
+              </p>
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {generatedPatientQuestions.map((question, index) => (
+                  <div 
+                    key={index} 
+                    className="bg-white/70 p-3 rounded-lg flex items-center justify-between cursor-pointer hover:bg-white transition-colors"
+                    onClick={() => {
+                      handleSampleQuestion(question);
+                      setActiveTab("chat");
+                    }}
+                  >
+                    <p className="text-sm">{question}</p>
+                    <Button variant="ghost" size="sm" className="opacity-50 hover:opacity-100">
+                      <Send className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ) : (
+            <QuestionGenerator />
+          )}
         </TabsContent>
       </Tabs>
     </div>

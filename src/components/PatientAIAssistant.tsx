@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,13 +9,18 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 
-// Mock patient data - this would come from your database in a real app
 interface Patient {
   id: string;
   name: string;
   age: number;
   diagnosis: string;
   stage: "early" | "moderate" | "advanced";
+  caseStudy?: string;
+}
+
+export interface PatientDataEvent {
+  patient: Patient;
+  caseStudy: string;
 }
 
 export default function PatientAIAssistant() {
@@ -38,7 +42,14 @@ export default function PatientAIAssistant() {
   
   const { toast } = useToast();
 
-  // Simulates loading progress
+  const dispatchPatientDataEvent = (patientData: PatientDataEvent) => {
+    const event = new CustomEvent('patientDataLoaded', { 
+      detail: patientData,
+      bubbles: true 
+    });
+    document.dispatchEvent(event);
+  };
+
   useEffect(() => {
     if (isProcessing) {
       const interval = setInterval(() => {
@@ -57,7 +68,6 @@ export default function PatientAIAssistant() {
     }
   }, [isProcessing]);
 
-  // Reset state when patient changes
   useEffect(() => {
     setCaseStudy("");
     setGeneratedContent({ carePlan: null, dietPlan: null, reminders: null });
@@ -86,11 +96,14 @@ export default function PatientAIAssistant() {
     setIsProcessing(true);
     setProcessingProgress(0);
     
-    // Simulate AI processing
+    const updatedPatients = patients.map(p => 
+      p.id === selectedPatient ? { ...p, caseStudy } : p
+    );
+    setPatients(updatedPatients);
+    
     setTimeout(() => {
       const patient = patients.find(p => p.id === selectedPatient);
       
-      // Generate mock content based on patient stage
       const generateForStage = (stage: string) => {
         if (stage === "early") {
           return {
@@ -133,7 +146,6 @@ export default function PatientAIAssistant() {
         }
       };
       
-      // Set generated content based on patient stage
       if (patient) {
         setGeneratedContent(generateForStage(patient.stage));
       }
@@ -153,13 +165,25 @@ export default function PatientAIAssistant() {
   };
 
   const loadPatientToChat = () => {
-    toast({
-      title: "Patient Loaded to Chat",
-      description: "You can now ask questions about this patient in the chat",
+    const patient = patients.find(p => p.id === selectedPatient);
+    if (!patient || !caseStudy) {
+      toast({
+        title: "Patient Data Incomplete",
+        description: "Please ensure patient and case study are fully entered before loading to chat",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    dispatchPatientDataEvent({
+      patient,
+      caseStudy
     });
     
-    // In a real implementation, this would set some context in the chat component
-    // This would likely use a context API or state management like Redux
+    toast({
+      title: "Patient Loaded to Chat",
+      description: `${patient.name}'s data has been loaded to chat. You can now ask questions about this patient.`,
+    });
   };
 
   return (

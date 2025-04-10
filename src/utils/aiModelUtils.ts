@@ -23,6 +23,9 @@ const modelConfigs = {
 // Store the token in memory (not persisted after page reload)
 let hfToken: string | null = null;
 
+// Patient data cache for context-aware responses
+let patientDataCache: Record<string, any> = {};
+
 export function setHuggingFaceToken(token: string) {
   hfToken = token;
   // Clear model cache to reload with new token
@@ -37,13 +40,25 @@ export function getHuggingFaceToken(): string | null {
   return hfToken;
 }
 
+export function storePatientData(patientId: string, patientData: any) {
+  patientDataCache[patientId] = patientData;
+  return true;
+}
+
+export function getPatientData(patientId: string): any {
+  return patientDataCache[patientId] || null;
+}
+
 export async function getModelResponse(modelName: string, prompt: string): Promise<string> {
   try {
     console.log(`Using model: ${modelName}`);
     
-    // For default model, use our predefined responses
+    // Check if the prompt contains patient context
+    const isPatientQuery = prompt.toLowerCase().includes('context: this is about patient');
+    
+    // For default model, use our predefined responses with patient context if available
     if (modelName === 'default') {
-      return simulateResponse(prompt);
+      return simulateResponse(prompt, isPatientQuery);
     }
     
     const config = modelConfigs[modelName];
@@ -111,10 +126,78 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
   }
 }
 
-// Simulate responses when models aren't loaded or for testing
-function simulateResponse(prompt: string): string {
+// Enhanced simulate responses when models aren't loaded or for testing
+function simulateResponse(prompt: string, isPatientQuery: boolean): string {
   const promptLower = prompt.toLowerCase();
   
+  // Extract patient name and condition if this is a patient query
+  let patientName = "";
+  let patientStage = "";
+  let patientAge = "";
+  
+  if (isPatientQuery) {
+    // Parse patient information from the prompt
+    const nameMatch = prompt.match(/patient\s+([A-Za-z\s]+)\s+who/i);
+    if (nameMatch && nameMatch[1]) {
+      patientName = nameMatch[1].trim();
+    }
+    
+    const stageMatch = prompt.match(/(early|moderate|advanced)\s+stage/i);
+    if (stageMatch && stageMatch[1]) {
+      patientStage = stageMatch[1].toLowerCase();
+    }
+    
+    const ageMatch = prompt.match(/Age:\s*(\d+)/i);
+    if (ageMatch && ageMatch[1]) {
+      patientAge = ageMatch[1];
+    }
+    
+    // Patient-specific responses based on stage
+    if (promptLower.includes('medication') || promptLower.includes('medicine')) {
+      if (patientStage === "early") {
+        return `${patientName} is currently taking Donepezil (5mg) once daily in the morning. This medication helps manage symptoms by increasing acetylcholine levels in the brain. The doctor has also recommended a vitamin B complex supplement to support overall brain health.`;
+      } else if (patientStage === "moderate") {
+        return `${patientName} is on Donepezil (10mg) and Memantine (10mg), taken in the morning and evening respectively. These medications work together to manage symptoms more effectively at this stage. Regular monitoring for side effects is important.`;
+      } else if (patientStage === "advanced") {
+        return `${patientName}'s current medication regimen includes Donepezil (10mg), Memantine (20mg), and Trazodone as needed for sleep disturbances. Medication is administered by the caregiver twice daily, and swallowing assistance may be required.`;
+      }
+    }
+    
+    if (promptLower.includes('activities') || promptLower.includes('exercise')) {
+      if (patientStage === "early") {
+        return `For ${patientName} at the early stage, I recommend daily cognitive exercises like puzzles, reading, and memory games. Physical activities like walking for 30 minutes daily are also beneficial. Maintaining social engagement through group activities helps preserve cognitive function.`;
+      } else if (patientStage === "moderate") {
+        return `At the moderate stage, ${patientName} would benefit from structured activities with some assistance. Simple crafts, listening to familiar music, and gentle exercise like seated yoga can be helpful. Activities should be scheduled during their best time of day, typically mornings.`;
+      } else if (patientStage === "advanced") {
+        return `For ${patientName} in the advanced stage, sensory stimulation activities are most appropriate. These include listening to favorite music, looking at family photos, gentle touch therapy, and aromatherapy. Short, simple interactions throughout the day are better than longer sessions.`;
+      }
+    }
+    
+    if (promptLower.includes('diet') || promptLower.includes('nutrition') || promptLower.includes('food')) {
+      if (patientStage === "early") {
+        return `${patientName} should follow a Mediterranean-style diet rich in vegetables, fruits, whole grains, fish, and olive oil. This diet has been shown to support brain health. Regular meal times and adequate hydration are important. ${patientName} can still prepare simple meals with minimal assistance.`;
+      } else if (patientStage === "moderate") {
+        return `At this moderate stage, ${patientName} benefits from nutrient-dense, easy-to-eat foods. Finger foods can promote independence. Meals should be served in a calm environment with minimal distractions. Regular monitoring of fluid intake is essential to prevent dehydration.`;
+      } else if (patientStage === "advanced") {
+        return `${patientName} requires a carefully planned diet of soft or pureed foods to address swallowing difficulties. High-calorie, nutrient-dense options are important as weight loss is common at this stage. Supervision during all meals is necessary, and thickened liquids may be recommended.`;
+      }
+    }
+    
+    if (promptLower.includes('symptoms') || promptLower.includes('experiencing')) {
+      if (patientStage === "early") {
+        return `${patientName} is experiencing mild memory lapses, especially with recent events, occasional word-finding difficulties, and some challenges with complex tasks like managing finances. However, ${patientName} still maintains independence in daily activities and recognizes these changes.`;
+      } else if (patientStage === "moderate") {
+        return `At this moderate stage, ${patientName} shows significant memory impairment affecting both recent and some past events, increased confusion especially in the evening (sundowning), difficulty recognizing some family members, and requires assistance with activities like dressing and bathing.`;
+      } else if (patientStage === "advanced") {
+        return `${patientName} is experiencing severe cognitive decline including minimal verbal communication, inability to recognize close family members, and complete dependence on caregivers for all activities of daily living. Physical symptoms include difficulty walking, swallowing problems, and increased susceptibility to infections.`;
+      }
+    }
+    
+    // Generic personalized response if no specific topic is matched
+    return `Based on ${patientName}'s case study and current ${patientStage} stage of Alzheimer's at age ${patientAge}, I would recommend discussing this specific question with their healthcare provider at the next appointment. Each patient's journey with Alzheimer's is unique, and personalized care recommendations are essential.`;
+  }
+  
+  // Default responses for general queries
   if (promptLower.includes('alzheimer') && promptLower.includes('symptom')) {
     return "Early symptoms of Alzheimer's include memory loss affecting daily activities, difficulty completing familiar tasks, confusion with time or place, trouble understanding visual images, and new problems with words in speaking or writing.";
   } else if (promptLower.includes('treatment') || promptLower.includes('medication')) {
