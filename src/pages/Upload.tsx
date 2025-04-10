@@ -29,9 +29,13 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Use RPC function to get the data
-      const { data, error } = await (supabase
-        .rpc('get_recent_files', { limit_count: 5 }) as any); // Using type assertion to bypass TypeScript errors
+      // Use RPC function to get the data with proper type casting
+      const rpc = supabase.rpc as unknown as (
+        fn: string, 
+        params: Record<string, any>
+      ) => Promise<{ data: any; error: any }>;
+      
+      const { data, error } = await rpc('get_recent_files', { limit_count: 5 });
       
       if (error) throw error;
       
