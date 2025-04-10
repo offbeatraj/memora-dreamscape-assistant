@@ -1,4 +1,3 @@
-
 import { pipeline, PipelineType } from '@huggingface/transformers';
 
 // Model cache to avoid reloading models
@@ -21,22 +20,22 @@ type ModelConfig = {
 const modelConfigs: Record<string, ModelConfig> = {
   'gpt2': {
     name: 'gpt2',
-    task: 'text-generation',
+    task: 'text-generation' as PipelineType,
     restricted: false
   },
   'llama-2': {
     name: 'TheBloke/Llama-2-7B-Chat-ONNX',
-    task: 'text-generation',
+    task: 'text-generation' as PipelineType,
     restricted: true
   },
   'flan-t5': {
     name: 'google/flan-t5-small',
-    task: 'text2text-generation',
+    task: 'text2text-generation' as PipelineType,
     restricted: false
   },
   'mistral': {
     name: 'mistralai/Mistral-7B-Instruct-v0.3',
-    task: 'text-generation',
+    task: 'text-generation' as PipelineType,
     restricted: true,
     config: {
       max_new_tokens: 512,
@@ -214,8 +213,7 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
           console.log("WebGPU not available or error occurred, falling back to default:", gpuError);
           modelInstances[modelKey] = await pipeline(
             config.task, 
-            config.name, 
-            {}
+            config.name
           );
         }
       } catch (error) {
