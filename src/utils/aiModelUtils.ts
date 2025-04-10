@@ -1,11 +1,24 @@
 
-import { pipeline } from '@huggingface/transformers';
+import { pipeline, PipelineType } from '@huggingface/transformers';
 
 // Model cache to avoid reloading models
 const modelInstances: Record<string, any> = {};
 
 // Model configurations
-const modelConfigs = {
+type ModelConfig = {
+  name: string;
+  task: PipelineType;
+  restricted: boolean;
+  config?: {
+    max_new_tokens: number;
+    temperature: number;
+    top_p: number;
+    repetition_penalty: number;
+    do_sample: boolean;
+  };
+};
+
+const modelConfigs: Record<string, ModelConfig> = {
   'gpt2': {
     name: 'gpt2',
     task: 'text-generation',
@@ -230,7 +243,8 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
       }
       
       if (config.task === 'text-generation') {
-        const generationConfig = modelName === 'mistral' ? config.config : {
+        // Use model-specific config if available, otherwise use default config
+        const generationConfig = modelName === 'mistral' && config.config ? config.config : {
           max_new_tokens: 100,
           temperature: 0.7,
           do_sample: true
