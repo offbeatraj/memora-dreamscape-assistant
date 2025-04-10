@@ -1,3 +1,4 @@
+
 import { pipeline, PipelineType } from '@huggingface/transformers';
 
 // Model cache to avoid reloading models

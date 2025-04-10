@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Check, Search, User, Users } from "lucide-react";
+import { Check, User, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -88,6 +88,44 @@ export default function PatientSelector({ onSelectPatient }: PatientSelectorProp
     setSelectedPatient(patient);
     setOpen(false);
     onSelectPatient(patient);
+    
+    // Generate a more detailed case study based on patient data
+    let caseStudy = `Patient ${patient.name} is ${patient.age} years old with ${patient.diagnosis} in the ${patient.stage} stage.`;
+    
+    // Add more details based on stage
+    if (patient.stage === "early") {
+      caseStudy += ` In the early stage, they are experiencing mild memory lapses but still maintain independence in most daily activities. They occasionally have difficulty finding the right words and remembering recent events.`;
+    } else if (patient.stage === "moderate") {
+      caseStudy += ` In the moderate stage, they require some assistance with daily activities and experience significant memory impairment affecting both recent and past events. They may have difficulty recognizing family members and show signs of confusion, especially in the evening.`;
+    } else if (patient.stage === "advanced") {
+      caseStudy += ` In the advanced stage, they require full-time care and have severe cognitive decline. They have difficulty with communication, are unable to recognize close family members, and need assistance with all activities of daily living.`;
+    }
+    
+    // Add gender-specific details
+    if (patient.gender === "male") {
+      caseStudy += ` He requires supervision for medication management and safety.`;
+    } else if (patient.gender === "female") {
+      caseStudy += ` She requires supervision for medication management and safety.`;
+    } else {
+      caseStudy += ` They require supervision for medication management and safety.`;
+    }
+    
+    // Create the patient data loaded event
+    const patientDataEvent = new CustomEvent('patientDataLoaded', {
+      detail: {
+        patient: {
+          id: patient.id,
+          name: patient.name,
+          age: patient.age,
+          diagnosis: patient.diagnosis,
+          stage: patient.stage
+        },
+        caseStudy: caseStudy
+      }
+    });
+    
+    // Dispatch the event
+    document.dispatchEvent(patientDataEvent);
   };
 
   return (
