@@ -110,7 +110,7 @@ const getSimulatedResponse = (userQuery: string): string => {
   }
 };
 
-// Get response from the API model
+// Get response from the API model for general chatbot assistant
 export const getModelResponse = async (prompt: string): Promise<string> => {
   const apiKey = getOpenAIKey();
   
@@ -133,6 +133,60 @@ export const getModelResponse = async (prompt: string): Promise<string> => {
         ],
         temperature: 0.7,
         max_tokens: 500
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        }
+      }
+    );
+
+    if (response.data && response.data.choices && response.data.choices.length > 0) {
+      const textResponse = response.data.choices[0].message.content;
+      // Clean any markdown formatting before returning
+      return cleanTextFormatting(textResponse);
+    } else {
+      throw new Error('Invalid response format');
+    }
+  } catch (error) {
+    console.error('API request error:', error);
+    // Fallback to contextual simulated responses if API call fails
+    return getSimulatedResponse(prompt);
+  }
+};
+
+// Get response specifically for the Patient Assistant using the Gemini model
+export const getPatientModelResponse = async (prompt: string, patientContext: string = ''): Promise<string> => {
+  const apiKey = getOpenAIKey();
+  
+  try {
+    if (!apiKey) {
+      // If no API key is provided, return a more contextually relevant simulated response
+      // Add patient name if available in the context
+      const patientName = patientContext.match(/patient\s+(\w+)/i)?.[1] || '';
+      const simulatedResponse = getSimulatedResponse(prompt);
+      return patientName ? `For ${patientName}: ${simulatedResponse}` : simulatedResponse;
+    }
+
+    // Create a prompt that includes patient context if available
+    const enhancedPrompt = patientContext ? 
+      `${patientContext}\n\nQuestion about this patient: ${prompt}` : 
+      prompt;
+
+    const response = await axios.post(
+      'https://router.requesty.ai/v1/chat/completions',
+      {
+        model: 'google/gemini-2.0-flash-exp', // Specifically use Gemini model for patient assistant
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are a specialized patient care assistant for Alzheimer\'s and dementia. When given patient context, tailor your responses specifically to that patient\'s situation, stage, and needs. Provide personalized, practical advice relevant to their exact condition.'
+          },
+          { role: 'user', content: enhancedPrompt }
+        ],
+        temperature: 0.5, // Lower temperature for more focused responses
+        max_tokens: 700  // Allow slightly longer responses for detailed patient info
       },
       {
         headers: {

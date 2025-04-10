@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Bot, Send, Loader2 } from "lucide-react";
-import { getModelResponse, storePatientData } from "@/utils/aiModelUtils";
+import { getPatientModelResponse, storePatientData } from "@/utils/aiModelUtils";
 import { useToast } from "@/components/ui/use-toast";
 import PatientQuestionGenerator from "./PatientQuestionGenerator";
 
@@ -55,23 +55,21 @@ export default function PatientAIAssistant() {
     setIsLoading(true);
     try {
       let prompt = input;
+      let patientContext = "";
       
       // Add patient context if available
       if (patientData && patientData.patient) {
-        // Create a more detailed prompt that includes patient context and conversation history
-        prompt = `Context: This is about patient ${patientData.patient.name} who has ${patientData.patient.diagnosis} in ${patientData.patient.stage} stage. 
+        // Create a more detailed patient context
+        patientContext = `Context: This is about patient ${patientData.patient.name} who has ${patientData.patient.diagnosis} in ${patientData.patient.stage} stage. 
         Age: ${patientData.patient.age}
         Case Study Details: ${patientData.caseStudy}
         
         Previous conversation context:
-        ${conversationHistory.slice(-4).join("\n")}
-        
-        Specific question about this patient: ${input}
-        
-        Provide a clear, accurate, and helpful response specifically about this patient based on the given context. Focus directly on answering the question.`;
+        ${conversationHistory.slice(-4).join("\n")}`;
       }
       
-      const aiResponse = await getModelResponse(prompt);
+      // Use the specialized patient model response function for patient-specific questions
+      const aiResponse = await getPatientModelResponse(prompt, patientContext);
       setResponse(aiResponse);
       
       // Update conversation history
@@ -140,7 +138,7 @@ export default function PatientAIAssistant() {
                       <div className="mt-4 bg-white p-4 rounded-lg border border-memora-purple/20">
                         <div className="flex items-center gap-2 mb-2">
                           <Bot className="h-5 w-5 text-memora-purple" />
-                          <h3 className="font-medium">AI Response</h3>
+                          <h3 className="font-medium">Gemini Response</h3>
                         </div>
                         <p className="text-sm whitespace-pre-wrap">{response}</p>
                       </div>
