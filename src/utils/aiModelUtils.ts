@@ -268,3 +268,4 @@ function simulateResponse(prompt: string, isPatientQuery: boolean): string {
     return "I'm here to help with information about Alzheimer's disease and memory care. You can ask me about symptoms, treatments, medications (like Donepezil or Memantine), dietary recommendations, exercise benefits, daily living strategies, or specific memory concerns. I can also provide information about different stages of Alzheimer's, caregiving approaches, and the latest research developments. How can I assist you today?";
   }
 }
+

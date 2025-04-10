@@ -24,6 +24,7 @@ export default function PatientAIAssistant() {
   const [response, setResponse] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [patientData, setPatientData] = useState<PatientDataEvent | null>(null);
+  const [conversationHistory, setConversationHistory] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Listen for patient data updates
@@ -34,6 +35,10 @@ export default function PatientAIAssistant() {
       // Store patient data in utility for context-aware responses
       if (event.detail && event.detail.patient) {
         storePatientData(event.detail.patient.id, event.detail);
+        
+        // Add initial greeting with patient name
+        const initialGreeting = `I'm ready to answer questions about ${event.detail.patient.name}'s condition and care. What would you like to know?`;
+        setResponse(initialGreeting);
       }
     };
 
@@ -54,15 +59,22 @@ export default function PatientAIAssistant() {
       
       // Add patient context if available
       if (patientData && patientData.patient) {
+        // Create a more detailed prompt that includes patient context
         prompt = `Context: This is about patient ${patientData.patient.name} who has ${patientData.patient.diagnosis} in ${patientData.patient.stage} stage. 
         Age: ${patientData.patient.age}
         Case Study Details: ${patientData.caseStudy}
         
-        Question: ${input}`;
+        Question: ${input}
+        
+        Previous conversation context:
+        ${conversationHistory.slice(-4).join("\n")}`;
       }
       
       const aiResponse = await getModelResponse(prompt);
       setResponse(aiResponse);
+      
+      // Update conversation history
+      setConversationHistory(prev => [...prev, `Q: ${input}`, `A: ${aiResponse}`]);
     } catch (error) {
       console.error("Error getting response:", error);
       toast({
