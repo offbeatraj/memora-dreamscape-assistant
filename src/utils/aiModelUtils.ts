@@ -95,11 +95,11 @@ export async function getModelResponse(prompt: string): Promise<string> {
     console.log(`Using Llama model with permanent token`);
     
     // Check if the prompt contains patient context
-    const isPatientQuery = prompt.toLowerCase().includes('context: this is about patient');
+    const containsPatientContext = prompt.toLowerCase().includes('context: this is about patient');
     
     // For non-patient queries or fallbacks, use simulated responses
-    if (!isPatientQuery && Math.random() > 0.2) { // 80% chance to use simulated response for non-patient queries
-      return simulateResponse(prompt, isPatientQuery);
+    if (!containsPatientContext && Math.random() > 0.2) { // 80% chance to use simulated response for non-patient queries
+      return simulateResponse(prompt, containsPatientContext);
     }
     
     // Get or create model instance
@@ -137,7 +137,7 @@ export async function getModelResponse(prompt: string): Promise<string> {
             return "Authentication error. Your token may not have access to the Llama model. Please check your Hugging Face token permissions.";
           }
         }
-        return simulateResponse(prompt, isPatientQuery);
+        return simulateResponse(prompt, containsPatientContext);
       }
     }
     
@@ -161,7 +161,7 @@ export async function getModelResponse(prompt: string): Promise<string> {
     }
     
     if (!result) {
-      return simulateResponse(prompt, isPatientQuery);
+      return simulateResponse(prompt, containsPatientContext);
     }
 
     // Format and return the response
@@ -182,11 +182,12 @@ export async function getModelResponse(prompt: string): Promise<string> {
       }
     }
     
-    return response || simulateResponse(prompt, isPatientQuery);
+    return response || simulateResponse(prompt, containsPatientContext);
   } catch (error) {
     console.error('Error generating response:', error);
-    // Pass the isPatientQuery parameter to simulateResponse
-    return simulateResponse(prompt, prompt.toLowerCase().includes('context: this is about patient'));
+    // Pass the containsPatientContext parameter to simulateResponse
+    const containsPatientContext = prompt.toLowerCase().includes('context: this is about patient');
+    return simulateResponse(prompt, containsPatientContext);
   }
 }
 
