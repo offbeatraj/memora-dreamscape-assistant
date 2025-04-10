@@ -514,3 +514,28 @@ Would you like more specific guidance about a particular aspect of care?`;
   
   return response;
 };
+
+// Add the getPatientCaseFiles function that's being imported in PatientAIAssistant.tsx
+export const getPatientCaseFiles = async (patientId: string): Promise<string> => {
+  try {
+    // Import the supabase client to fetch case files
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    const { data, error } = await supabase
+      .from('patient_files')
+      .select('notes, file_name')
+      .eq('patient_id', patientId)
+      .eq('file_category', 'case')
+      .order('upload_date', { ascending: false });
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) return "";
+    
+    // Combine all notes from case files into a single text
+    return data.map(file => `Case file "${file.file_name}":\n${file.notes || "No description provided"}`).join("\n\n");
+  } catch (error) {
+    console.error("Error fetching patient case files:", error);
+    return "";
+  }
+};
