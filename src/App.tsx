@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import PatientList from "./pages/PatientList";
 import PatientDetail from "./pages/PatientDetail";
+import PatientNew from "./pages/PatientNew";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/resources" element={<Resources />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/patients" element={<PatientList />} />
+          <Route path="/patient/new" element={<PatientNew />} />
           <Route path="/patient/:id" element={<PatientDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
