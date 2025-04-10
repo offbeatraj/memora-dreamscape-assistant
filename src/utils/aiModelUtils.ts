@@ -1,4 +1,3 @@
-
 import { pipeline } from '@huggingface/transformers';
 
 // Model cache to avoid reloading models
@@ -95,19 +94,16 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
     if (!modelInstances[modelKey]) {
       console.log(`Loading model ${config.name}...`);
       try {
-        // Fixed TypeScript error: Now passing correct options structure
-        const pipelineOptions = {
-          quantized: true
-        };
-        
         if (hfToken) {
-          // Use the token for API access - not directly in options
-          // The @huggingface/transformers will use this from browser storage
+          // Use the token for API access
           console.log("Setting HF token for authentication");
           localStorage.setItem('hf_api_token', hfToken);
         }
         
-        modelInstances[modelKey] = await pipeline(config.task, config.name, pipelineOptions);
+        // Pass an empty object as options to avoid the type error
+        // The @huggingface/transformers library will use the token from localStorage
+        modelInstances[modelKey] = await pipeline(config.task, config.name, {});
+        
       } catch (error) {
         console.error('Error loading model:', error);
         return "I'm sorry, there was an error loading the AI model. Please check your Hugging Face token or try a different model.";
