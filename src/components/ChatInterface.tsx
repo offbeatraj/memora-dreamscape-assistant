@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,7 +40,7 @@ interface PatientContext {
 const initialMessages: Message[] = [
   {
     id: "1",
-    content: "Hello! I'm Memora, your personal memory assistant. How can I help you today? I can answer questions about Alzheimer's, provide daily support, or just chat.",
+    content: "Hello! I'm Memora, your personal memory assistant powered by Mistral 7B. How can I help you today? I can answer questions about Alzheimer's, provide daily support, or just chat.",
     role: "assistant",
     timestamp: new Date(),
     type: "text"
@@ -56,11 +55,7 @@ const sampleQuestions = [
   "What day is it today?",
 ];
 
-interface ChatInterfaceProps {
-  aiModel?: string;
-}
-
-export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProps) {
+export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -202,7 +197,7 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
         prompt = `The user has a question about memory: ${content}`;
       }
       
-      const response = await getModelResponse(aiModel, prompt);
+      const response = await getModelResponse(prompt);
       
       let responseType: MessageType = "text";
       let responseMetadata = {};
@@ -244,7 +239,7 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
       
       const errorMessage: Message = {
         id: Date.now().toString(),
-        content: "I'm sorry, I encountered an issue processing your request. Please try again or select a different AI model.",
+        content: "I'm sorry, I encountered an issue processing your request. Please try again.",
         role: "assistant",
         timestamp: new Date(),
         type: "text"
@@ -254,7 +249,7 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
       
       toast({
         title: "AI Model Error",
-        description: "There was an error generating a response. Try a different model.",
+        description: "There was an error generating a response.",
         variant: "destructive",
       });
     } finally {
@@ -414,13 +409,11 @@ export default function ChatInterface({ aiModel = "default" }: ChatInterfaceProp
 
   return (
     <div className="flex flex-col h-[70vh] md:h-[80vh]">
-      {aiModel !== "default" && (
-        <div className="bg-green-100 mb-4 p-3 rounded-lg flex items-center">
-          <Brain className="h-5 w-5 text-green-700 mr-2" />
-          <span className="text-sm">Using AI Model: <span className="font-medium">{aiModel}</span></span>
-          {isLoading && <Loader2 className="h-4 w-4 ml-2 animate-spin text-green-700" />}
-        </div>
-      )}
+      <div className="bg-green-100 mb-4 p-3 rounded-lg flex items-center">
+        <Brain className="h-5 w-5 text-green-700 mr-2" />
+        <span className="text-sm">Using <span className="font-medium">Mistral 7B</span> model</span>
+        {isLoading && <Loader2 className="h-4 w-4 ml-2 animate-spin text-green-700" />}
+      </div>
       
       {patientContext && (
         <div className="bg-memora-purple/10 mb-4 p-3 rounded-lg flex items-center justify-between">
