@@ -181,22 +181,36 @@ export default function ChatInterface() {
     
     try {
       let prompt = content;
+      let contextPrompt = "";
+      
+      const recentMessages = messages
+        .slice(-6)
+        .map(msg => `${msg.role}: ${msg.content}`)
+        .join("\n");
       
       if (patientContext) {
         const { patient, caseStudy } = patientContext;
-        prompt = `Context: This is about patient ${patient.name} who has ${patient.diagnosis} in ${patient.stage} stage. 
+        contextPrompt = `Context: This is about patient ${patient.name} who has ${patient.diagnosis} in ${patient.stage} stage. 
         Age: ${patient.age}
         Case Study Details: ${caseStudy}
         
+        Recent conversation:
+        ${recentMessages}
+        
         Question: ${content}`;
+      } else {
+        contextPrompt = `Recent conversation:
+        ${recentMessages}
+        
+        User question: ${content}`;
       }
       
       if (type === "image") {
-        prompt = "The user has shared a family photo. Please provide a supportive response about memory and family connections.";
+        prompt = "The user has shared a family photo. Please provide a response about this family photo, how it might help with memory, and suggestions for using family photos in memory care.";
       } else if (type === "health") {
-        prompt = "The user has shared their health data including blood pressure (120/80), temperature (98.6°F), heart rate (72 bpm), and oxygen (98%). Please provide an analysis and recommendations.";
-      } else if (type === "question") {
-        prompt = `The user has a question about memory: ${content}`;
+        prompt = "The user has shared their health data including blood pressure (120/80), temperature (98.6°F), heart rate (72 bpm), and oxygen (98%). Please provide an analysis and recommendations related to these readings and how they might relate to cognitive health.";
+      } else {
+        prompt = contextPrompt;
       }
       
       const response = await getModelResponse(prompt);
@@ -204,7 +218,7 @@ export default function ChatInterface() {
       let responseType: MessageType = "text";
       let responseMetadata = {};
       
-      if (input.toLowerCase().includes("medicine") || input.toLowerCase().includes("medication")) {
+      if (content.toLowerCase().includes("medicine") || content.toLowerCase().includes("medication")) {
         responseType = "reminder";
         responseMetadata = {
           medicationName: "Donepezil and Memantine",
@@ -232,7 +246,7 @@ export default function ChatInterface() {
         timestamp: new Date(),
         type: responseType,
         metadata: responseMetadata,
-        important: input.toLowerCase().includes("medicine") || input.toLowerCase().includes("medication"),
+        important: content.toLowerCase().includes("medicine") || content.toLowerCase().includes("medication"),
       };
       
       setMessages((prev) => [...prev, assistantMessage]);

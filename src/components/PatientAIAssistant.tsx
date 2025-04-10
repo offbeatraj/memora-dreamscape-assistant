@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,15 +58,17 @@ export default function PatientAIAssistant() {
       
       // Add patient context if available
       if (patientData && patientData.patient) {
-        // Create a more detailed prompt that includes patient context
+        // Create a more detailed prompt that includes patient context and conversation history
         prompt = `Context: This is about patient ${patientData.patient.name} who has ${patientData.patient.diagnosis} in ${patientData.patient.stage} stage. 
         Age: ${patientData.patient.age}
         Case Study Details: ${patientData.caseStudy}
         
-        Question: ${input}
-        
         Previous conversation context:
-        ${conversationHistory.slice(-4).join("\n")}`;
+        ${conversationHistory.slice(-4).join("\n")}
+        
+        Specific question about this patient: ${input}
+        
+        Provide a clear, accurate, and helpful response specifically about this patient based on the given context. Focus directly on answering the question.`;
       }
       
       const aiResponse = await getModelResponse(prompt);
