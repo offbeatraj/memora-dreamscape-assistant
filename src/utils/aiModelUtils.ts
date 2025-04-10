@@ -1,4 +1,3 @@
-
 import { pipeline } from '@huggingface/transformers';
 
 // Model cache to avoid reloading models
@@ -32,8 +31,11 @@ const modelConfigs = {
 export function setHuggingFaceToken(token: string) {
   try {
     if (token && token.trim()) {
-      // Store both in localStorage and as a global variable for direct API access
+      // Store in localStorage
       localStorage.setItem('hf_token', token);
+      
+      // Set token for Hugging Face transformers.js library
+      localStorage.setItem('huggingface-auth-token', token);
       
       // Clear model cache to reload with new token
       Object.keys(modelInstances).forEach(key => {
@@ -72,8 +74,8 @@ export function getPatientData(patientId: string): any {
 // CLI Authentication for Hugging Face API
 export async function authenticateWithCLI(token: string): Promise<boolean> {
   try {
-    if (!token || !token.trim()) {
-      console.error("Invalid token provided");
+    if (!token || !token.trim() || !token.startsWith("hf_")) {
+      console.error("Invalid token format provided");
       return false;
     }
 
@@ -154,11 +156,9 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
           console.log("Setting up HF token authentication");
           // Set the token in localStorage with the specific key expected by the transformers.js library
           localStorage.setItem('huggingface-auth-token', hfToken);
-          // For backward compatibility
-          localStorage.setItem('hf_api_token', hfToken);
         }
         
-        // Create pipeline with proper options - empty object as options parameter
+        // Create pipeline without deprecated options
         modelInstances[modelKey] = await pipeline(config.task, config.name, {});
         
       } catch (error) {

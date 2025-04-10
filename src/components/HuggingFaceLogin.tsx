@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle, XCircle, Key, Terminal } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Key, Terminal, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { authenticateWithCLI, checkModelAccess, setHuggingFaceToken } from "@/utils/aiModelUtils";
 
@@ -19,6 +19,7 @@ export default function HuggingFaceLogin({ onLoginSuccess, modelId = "mistralai/
   const [authStatus, setAuthStatus] = useState<"idle" | "success" | "error">("idle");
   const [modelAccessStatus, setModelAccessStatus] = useState<"idle" | "checking" | "granted" | "denied">("idle");
   const [showToken, setShowToken] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const { toast } = useToast();
 
   const handleLogin = async () => {
@@ -31,11 +32,22 @@ export default function HuggingFaceLogin({ onLoginSuccess, modelId = "mistralai/
       return;
     }
 
+    if (!token.trim().startsWith("hf_")) {
+      toast({
+        title: "Invalid Token Format",
+        description: "Hugging Face tokens must start with 'hf_'",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     setAuthStatus("idle");
     setModelAccessStatus("checking");
+    setErrorMessage("");
 
     try {
+      console.log("Attempting authentication with token:", token.substring(0, 5) + "...");
       const isAuthenticated = await authenticateWithCLI(token);
 
       if (isAuthenticated) {
@@ -69,6 +81,7 @@ export default function HuggingFaceLogin({ onLoginSuccess, modelId = "mistralai/
       } else {
         setAuthStatus("error");
         setModelAccessStatus("idle");
+        setErrorMessage("Invalid Hugging Face token. Please check your token and try again.");
         toast({
           title: "Authentication Failed",
           description: "Invalid Hugging Face token",
@@ -79,6 +92,7 @@ export default function HuggingFaceLogin({ onLoginSuccess, modelId = "mistralai/
       console.error("Login error:", error);
       setAuthStatus("error");
       setModelAccessStatus("idle");
+      setErrorMessage(error instanceof Error ? error.message : "An unknown error occurred");
       toast({
         title: "Authentication Error",
         description: "An error occurred during authentication",
@@ -213,7 +227,7 @@ export default function HuggingFaceLogin({ onLoginSuccess, modelId = "mistralai/
           {authStatus === "error" && (
             <div className="bg-red-50 border border-red-200 rounded p-3">
               <p className="text-sm text-red-700">
-                Make sure you're using a valid Hugging Face token. You can create or find your token at{" "}
+                {errorMessage || "Make sure you're using a valid Hugging Face token."} You can create or find your token at{" "}
                 <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" className="underline">
                   huggingface.co/settings/tokens
                 </a>
