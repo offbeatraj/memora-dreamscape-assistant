@@ -86,6 +86,7 @@ export default function Chat() {
                       <SelectItem value="gpt2">GPT-2</SelectItem>
                       <SelectItem value="llama-2">Llama-2</SelectItem>
                       <SelectItem value="flan-t5">FLAN-T5</SelectItem>
+                      <SelectItem value="mistral">Mistral-7B-Instruct</SelectItem>
                     </SelectContent>
                   </Select>
                   

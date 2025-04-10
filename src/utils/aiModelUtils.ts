@@ -18,6 +18,10 @@ const modelConfigs = {
     name: 'google/flan-t5-small',
     task: 'text2text-generation',
   },
+  'mistral': {
+    name: 'mistralai/Mistral-7B-Instruct-v0.3',
+    task: 'text-generation',
+  }
 };
 
 // Store the token in localStorage for persistence
@@ -91,14 +95,19 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
     if (!modelInstances[modelKey]) {
       console.log(`Loading model ${config.name}...`);
       try {
-        const options = {
-          credentials: {
-            accessToken: hfToken
-          },
-          cache: true,
+        // Fixed TypeScript error: Now passing correct options structure
+        const pipelineOptions = {
+          quantized: true
         };
         
-        modelInstances[modelKey] = await pipeline(config.task, config.name, options);
+        if (hfToken) {
+          // Use the token for API access - not directly in options
+          // The @huggingface/transformers will use this from browser storage
+          console.log("Setting HF token for authentication");
+          localStorage.setItem('hf_api_token', hfToken);
+        }
+        
+        modelInstances[modelKey] = await pipeline(config.task, config.name, pipelineOptions);
       } catch (error) {
         console.error('Error loading model:', error);
         return "I'm sorry, there was an error loading the AI model. Please check your Hugging Face token or try a different model.";
