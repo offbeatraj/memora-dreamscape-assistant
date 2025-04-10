@@ -1,10 +1,9 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { Brain, Send, Loader2, User, Bot, ChevronDown, Star, Image, Paperclip, MessageCircleQuestion, Activity } from "lucide-react";
+import { Brain, Send, Loader2, User, Bot, ChevronDown, Star, Image, Paperclip, MessageCircleQuestion, Activity, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,6 +44,7 @@ export default function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "insights">("chat");
   const [attachmentType, setAttachmentType] = useState<"none" | "image" | "health" | "question">("none");
+  const [activePatient, setActivePatient] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -84,7 +84,6 @@ export default function ChatInterface() {
       content = input || "Generated question about memory";
     }
     
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       content,
@@ -99,48 +98,65 @@ export default function ChatInterface() {
     setAttachmentType("none");
     setIsLoading(true);
     
-    // Simulate AI response (in a real app, this would call an AI API)
     setTimeout(() => {
       let response: string;
       let responseType: MessageType = "text";
       let responseMetadata = {};
       
-      // Enhanced response logic based on message type and content
-      if (type === "image") {
-        response = "This seems to be a family photo. Based on previous conversations, I believe this might be from the family reunion last summer at Lake Tahoe. You particularly enjoyed the barbecue that day. Would you like me to tell you more about the people in this photo?";
-      } else if (type === "health") {
-        response = "Your health readings look good today! Your blood pressure of 120/80 is within ideal range, and your other vitals are normal. This is an improvement from last week's readings. Remember to continue taking your medication with breakfast.";
-        responseType = "health";
-        responseMetadata = {
-          assessment: "Normal readings",
-          comparison: "Improved from last week",
-          recommendations: ["Continue medication schedule", "Stay hydrated", "Gentle exercise recommended"]
-        };
-      } else if (type === "question") {
-        response = "That's an excellent question about memory. Short-term memory loss is often one of the first noticeable symptoms of Alzheimer's. It's important to note that occasional forgetfulness differs from persistent memory issues that interfere with daily life. Would you like some strategies that might help with memory retention?";
-        responseType = "question";
-      } else if (input.toLowerCase().includes("symptoms") || input.toLowerCase().includes("signs")) {
-        response = "Early signs of Alzheimer's disease include memory loss that disrupts daily life, challenges in planning or solving problems, difficulty completing familiar tasks, confusion with time or place, and trouble understanding visual images or spatial relationships. It's important to consult a healthcare professional if you notice these symptoms.";
-      } else if (input.toLowerCase().includes("treatment") || input.toLowerCase().includes("cure")) {
-        response = "While there's no cure for Alzheimer's disease yet, there are medications that can temporarily improve symptoms or slow the rate of decline. Non-drug approaches like cognitive stimulation, physical activity, social engagement, and proper nutrition are also beneficial. Recent research is exploring promising new treatments targeting the underlying biology of the disease.";
-      } else if (input.toLowerCase().includes("help") || input.toLowerCase().includes("support")) {
-        response = "Supporting someone with Alzheimer's includes establishing regular routines, creating a safe environment, providing memory cues, encouraging social activities, and maintaining good nutrition and exercise habits. It's also important to take care of yourself as a caregiver by seeking support groups and respite care when needed.";
-      } else if (input.toLowerCase().includes("medicine") || input.toLowerCase().includes("medication")) {
-        response = "I've made a note to remind you about your medicine. Your current regimen includes Donepezil (10mg) to be taken each morning and Memantine (10mg) in the evening with dinner. Would you like me to set up specific reminder times for these medications?";
-        responseType = "reminder";
-        responseMetadata = {
-          medicationName: "Donepezil and Memantine",
-          schedule: "Morning and evening",
-          nextDose: "Today at 7:00 PM"
-        };
-      } else if (input.toLowerCase().includes("day") || input.toLowerCase().includes("date")) {
-        const today = new Date();
-        const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        response = `Today is ${today.toLocaleDateString('en-US', options)}. Your schedule today includes a doctor's appointment at 2:00 PM with Dr. Wilson and a video call with your daughter Sarah at 5:30 PM.`;
-      } else if (input.toLowerCase().includes("exercise") || input.toLowerCase().includes("activities") || input.toLowerCase().includes("brain health")) {
-        response = "Activities that promote brain health include daily puzzles like crosswords or Sudoku, learning new skills, regular physical exercise like walking or swimming, maintaining social connections, eating a balanced diet rich in antioxidants, and getting quality sleep. Research shows that a combination of these activities provides the best cognitive benefits.";
+      if (activePatient) {
+        if (input.toLowerCase().includes("medication") || input.toLowerCase().includes("medicine")) {
+          response = "Based on Eleanor Johnson's records, she is currently taking Donepezil (10mg) each morning and Memantine (10mg) in the evening with dinner. Her last medication review was on April 2, 2025. Would you like me to set a reminder for her next dose?";
+          responseType = "reminder";
+          responseMetadata = {
+            patientName: "Eleanor Johnson",
+            medicationName: "Donepezil and Memantine",
+            schedule: "Morning and evening",
+            nextDose: "Today at 7:00 PM"
+          };
+        } else if (input.toLowerCase().includes("diet") || input.toLowerCase().includes("food") || input.toLowerCase().includes("eat")) {
+          response = "Eleanor Johnson's current diet plan includes a Mediterranean-style diet with an emphasis on omega-3 rich foods. She should have small, frequent meals rather than three large ones. Her morning meal was recorded as oatmeal with berries at 8:15 AM today. Would you like to see her full diet plan?";
+        } else if (input.toLowerCase().includes("activity") || input.toLowerCase().includes("exercise")) {
+          response = "Eleanor's care plan includes a daily 15-minute walk in the morning, which was completed today at 9:45 AM according to her caregiver's notes. She also has cognitive exercises scheduled for 2:00 PM today. Would you like me to notify her caregiver about these activities?";
+        } else {
+          response = "I'm currently loaded with Eleanor Johnson's patient profile. She is a 73-year-old female diagnosed with moderate-stage Alzheimer's. Her last cognitive assessment was on March 28, 2025. How else can I assist you with Eleanor's care today?";
+        }
       } else {
-        response = "Thank you for your message. I've noted this information in your personal memory bank. I'm here to provide information about Alzheimer's disease and support for patients and caregivers. Is there anything specific you'd like to know more about?";
+        if (type === "image") {
+          response = "This seems to be a family photo. Based on previous conversations, I believe this might be from the family reunion last summer at Lake Tahoe. You particularly enjoyed the barbecue that day. Would you like me to tell you more about the people in this photo?";
+        } else if (type === "health") {
+          response = "Your health readings look good today! Your blood pressure of 120/80 is within ideal range, and your other vitals are normal. This is an improvement from last week's readings. Remember to continue taking your medication with breakfast.";
+          responseType = "health";
+          responseMetadata = {
+            assessment: "Normal readings",
+            comparison: "Improved from last week",
+            recommendations: ["Continue medication schedule", "Stay hydrated", "Gentle exercise recommended"]
+          };
+        } else if (type === "question") {
+          response = "That's an excellent question about memory. Short-term memory loss is often one of the first noticeable symptoms of Alzheimer's. It's important to note that occasional forgetfulness differs from persistent memory issues that interfere with daily life. Would you like some strategies that might help with memory retention?";
+          responseType = "question";
+        } else if (input.toLowerCase().includes("symptoms") || input.toLowerCase().includes("signs")) {
+          response = "Early signs of Alzheimer's disease include memory loss that disrupts daily life, challenges in planning or solving problems, difficulty completing familiar tasks, confusion with time or place, and trouble understanding visual images or spatial relationships. It's important to consult a healthcare professional if you notice these symptoms.";
+        } else if (input.toLowerCase().includes("treatment") || input.toLowerCase().includes("cure")) {
+          response = "While there's no cure for Alzheimer's disease yet, there are medications that can temporarily improve symptoms or slow the rate of decline. Non-drug approaches like cognitive stimulation, physical activity, social engagement, and proper nutrition are also beneficial. Recent research is exploring promising new treatments targeting the underlying biology of the disease.";
+        } else if (input.toLowerCase().includes("help") || input.toLowerCase().includes("support")) {
+          response = "Supporting someone with Alzheimer's includes establishing regular routines, creating a safe environment, providing memory cues, encouraging social activities, and maintaining good nutrition and exercise habits. It's also important to take care of yourself as a caregiver by seeking support groups and respite care when needed.";
+        } else if (input.toLowerCase().includes("medicine") || input.toLowerCase().includes("medication")) {
+          response = "I've made a note to remind you about your medicine. Your current regimen includes Donepezil (10mg) to be taken each morning and Memantine (10mg) in the evening with dinner. Would you like me to set up specific reminder times for these medications?";
+          responseType = "reminder";
+          responseMetadata = {
+            medicationName: "Donepezil and Memantine",
+            schedule: "Morning and evening",
+            nextDose: "Today at 7:00 PM"
+          };
+        } else if (input.toLowerCase().includes("day") || input.toLowerCase().includes("date")) {
+          const today = new Date();
+          const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+          response = `Today is ${today.toLocaleDateString('en-US', options)}. Your schedule today includes a doctor's appointment at 2:00 PM with Dr. Wilson and a video call with your daughter Sarah at 5:30 PM.`;
+        } else if (input.toLowerCase().includes("exercise") || input.toLowerCase().includes("activities") || input.toLowerCase().includes("brain health")) {
+          response = "Activities that promote brain health include daily puzzles like crosswords or Sudoku, learning new skills, regular physical exercise like walking or swimming, maintaining social connections, eating a balanced diet rich in antioxidants, and getting quality sleep. Research shows that a combination of these activities provides the best cognitive benefits.";
+        } else {
+          response = "Thank you for your message. I've noted this information in your personal memory bank. I'm here to provide information about Alzheimer's disease and support for patients and caregivers. Is there anything specific you'd like to know more about?";
+        }
       }
       
       const assistantMessage: Message = {
@@ -174,6 +190,25 @@ export default function ChatInterface() {
     toast({
       title: "Message marked as important",
       description: "This message will be saved for future reference.",
+    });
+  };
+
+  const loadPatientData = (patientId: string, patientName: string) => {
+    setActivePatient(patientId);
+    
+    const systemMessage: Message = {
+      id: Date.now().toString(),
+      content: `${patientName}'s data has been loaded. You can now ask questions specific to this patient.`,
+      role: "assistant",
+      timestamp: new Date(),
+      type: "text"
+    };
+    
+    setMessages((prev) => [...prev, systemMessage]);
+    
+    toast({
+      title: `Patient Loaded: ${patientName}`,
+      description: "You can now ask questions specific to this patient.",
     });
   };
 
@@ -256,7 +291,6 @@ export default function ChatInterface() {
   };
 
   const getInsights = () => {
-    // In a real app, this would analyze conversation history
     return [
       {
         title: "Memory Status",
@@ -292,6 +326,27 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col h-[70vh] md:h-[80vh]">
+      {activePatient && (
+        <div className="bg-memora-purple/10 mb-4 p-3 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <User className="h-5 w-5 text-memora-purple" />
+            <span className="font-medium text-sm">Patient Mode: Eleanor Johnson</span>
+            <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200 text-xs">
+              Moderate Stage
+            </Badge>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-7"
+            onClick={() => setActivePatient(null)}
+          >
+            <X className="h-3 w-3 mr-1" />
+            Clear Patient
+          </Button>
+        </div>
+      )}
+
       <Tabs 
         defaultValue="chat" 
         value={activeTab} 
@@ -325,19 +380,42 @@ export default function ChatInterface() {
             </div>
           </Card>
           
-          <div className="mb-4 flex flex-wrap gap-2">
-            {sampleQuestions.map((question, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                size="sm"
-                onClick={() => handleSampleQuestion(question)}
-                className="text-xs bg-white/50 hover:bg-white transition-all duration-300 hover:shadow-md"
-              >
-                {question}
+          {!activePatient && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {sampleQuestions.map((question, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSampleQuestion(question)}
+                  className="text-xs bg-white/50 hover:bg-white transition-all duration-300 hover:shadow-md"
+                >
+                  {question}
+                </Button>
+              ))}
+            </div>
+          )}
+          
+          {activePatient && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => handleSampleQuestion("What medications is Eleanor taking?")} 
+                className="text-xs bg-white/50 hover:bg-white">
+                What medications is she taking?
               </Button>
-            ))}
-          </div>
+              <Button variant="outline" size="sm" onClick={() => handleSampleQuestion("Show me Eleanor's diet plan")} 
+                className="text-xs bg-white/50 hover:bg-white">
+                Show diet plan
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleSampleQuestion("What activities are scheduled today?")} 
+                className="text-xs bg-white/50 hover:bg-white">
+                Today's activities
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleSampleQuestion("Set a medicine reminder for 7pm")} 
+                className="text-xs bg-white/50 hover:bg-white">
+                Set medicine reminder
+              </Button>
+            </div>
+          )}
           
           <form onSubmit={handleSubmit} className="flex gap-2">
             <div className="relative flex-1">

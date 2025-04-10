@@ -1,6 +1,7 @@
 
 import Layout from "@/components/Layout";
 import ChatInterface from "@/components/ChatInterface";
+import PatientAIAssistant from "@/components/PatientAIAssistant";
 import { Brain } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,8 @@ export default function Chat() {
             Ask questions about Alzheimer's or request personalized help. Your AI companion can provide information, emotional support, and memory assistance.
           </p>
         </div>
+        
+        <PatientAIAssistant />
         
         <Card className="glass-card">
           <CardContent className="p-4 md:p-6">
