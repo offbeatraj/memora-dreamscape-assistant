@@ -10,3 +10,54 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Helper function for handling storage downloads
+export const getFileUrl = (path: string) => {
+  return supabase.storage.from('patient-files').getPublicUrl(path).data.publicUrl;
+};
+
+// Helper function for file uploads
+export const uploadPatientFile = async (
+  file: File, 
+  patientId: string, 
+  fileCategory: string,
+  notes?: string
+) => {
+  try {
+    const fileName = `${patientId}/${Date.now()}-${file.name}`;
+    
+    // Upload file to storage
+    const { data: fileData, error: fileError } = await supabase.storage
+      .from('patient-files')
+      .upload(fileName, file);
+    
+    if (fileError) throw fileError;
+
+    // Get the public URL
+    const { data: urlData } = supabase.storage
+      .from('patient-files')
+      .getPublicUrl(fileName);
+
+    // Create record in database
+    const { data, error } = await supabase
+      .from('patient_files')
+      .insert({
+        patient_id: patientId,
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size,
+        file_path: urlData?.publicUrl ?? fileName,
+        file_category: fileCategory,
+        notes: notes || null
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    throw error;
+  }
+};

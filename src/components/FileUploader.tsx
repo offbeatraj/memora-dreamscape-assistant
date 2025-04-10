@@ -1,12 +1,14 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, X, FileText, Loader2, Check, FileType, FileImage, File } from "lucide-react";
+import { Upload, X, FileText, Loader2, Check, FileImage, File } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useParams } from "react-router-dom";
 
 export default function FileUploader() {
   const [files, setFiles] = useState<File[]>([]);
@@ -14,8 +16,17 @@ export default function FileUploader() {
   const [fileType, setFileType] = useState<"medical" | "personal" | "other">("medical");
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [patientId, setPatientId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { id } = useParams<{ id: string }>();
+
+  useEffect(() => {
+    // Set patient ID from route params if available
+    if (id) {
+      setPatientId(id);
+    }
+  }, [id]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -40,11 +51,54 @@ export default function FileUploader() {
       return;
     }
     
+    // Check if we have a patient ID
+    if (!patientId) {
+      toast({
+        title: "Patient not found",
+        description: "Please ensure you're viewing a patient's profile before uploading files.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setUploading(true);
     
-    // Simulate file upload (in a real app, this would call an API)
-    setTimeout(() => {
-      setUploading(false);
+    try {
+      // Process each file
+      for (const file of files) {
+        // 1. Upload file to Supabase Storage
+        const fileName = `${patientId}/${Date.now()}-${file.name}`;
+        const { data: fileData, error: fileError } = await supabase.storage
+          .from('patient-files')
+          .upload(fileName, file);
+        
+        if (fileError) {
+          throw fileError;
+        }
+
+        // Get the public URL for the file
+        const { data: urlData } = supabase.storage
+          .from('patient-files')
+          .getPublicUrl(fileName);
+
+        // 2. Create record in patient_files table
+        const { error: dbError } = await supabase
+          .from('patient_files')
+          .insert({
+            patient_id: patientId,
+            file_name: file.name,
+            file_type: file.type,
+            file_size: file.size,
+            file_path: urlData?.publicUrl ?? fileName,
+            file_category: fileType,
+            notes: notes.trim() ? notes : null
+          });
+        
+        if (dbError) {
+          throw dbError;
+        }
+      }
+      
       setUploadSuccess(true);
       
       toast({
@@ -59,14 +113,23 @@ export default function FileUploader() {
         setFileType("medical");
         setUploadSuccess(false);
       }, 3000);
-    }, 2000);
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Upload failed",
+        description: "There was an error uploading your files. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const getFileIcon = (file: File) => {
     const extension = file.name.split('.').pop()?.toLowerCase();
     
     if (extension === 'pdf') {
-      return <File className="h-5 w-5 text-memora-purple" />; // Changed from FilePdf to File
+      return <File className="h-5 w-5 text-memora-purple" />;
     } else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension || '')) {
       return <FileImage className="h-5 w-5 text-memora-purple" />;
     } else {

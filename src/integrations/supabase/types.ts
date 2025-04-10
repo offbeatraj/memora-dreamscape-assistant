@@ -9,6 +9,167 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      patient_diet: {
+        Row: {
+          created_at: string
+          food: string
+          id: string
+          meal: string
+          notes: string | null
+          patient_id: string
+          time: string
+        }
+        Insert: {
+          created_at?: string
+          food: string
+          id?: string
+          meal: string
+          notes?: string | null
+          patient_id: string
+          time: string
+        }
+        Update: {
+          created_at?: string
+          food?: string
+          id?: string
+          meal?: string
+          notes?: string | null
+          patient_id?: string
+          time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_diet_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_files: {
+        Row: {
+          file_category: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          notes: string | null
+          patient_id: string
+          upload_date: string
+        }
+        Insert: {
+          file_category: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          upload_date?: string
+        }
+        Update: {
+          file_category?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          upload_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_files_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_notes: {
+        Row: {
+          author: string
+          content: string
+          created_at: string
+          id: string
+          note_type: string
+          patient_id: string
+          title: string
+        }
+        Insert: {
+          author: string
+          content: string
+          created_at?: string
+          id?: string
+          note_type: string
+          patient_id: string
+          title: string
+        }
+        Update: {
+          author?: string
+          content?: string
+          created_at?: string
+          id?: string
+          note_type?: string
+          patient_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_notes_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_tasks: {
+        Row: {
+          created_at: string
+          description: string
+          due_date: string | null
+          frequency: string
+          id: string
+          patient_id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          due_date?: string | null
+          frequency: string
+          id?: string
+          patient_id: string
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          frequency?: string
+          id?: string
+          patient_id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_tasks_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           age: number
