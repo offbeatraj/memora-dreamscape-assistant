@@ -29,6 +29,19 @@ interface Patient {
   gender: string;
 }
 
+// Define valid stage types
+type ValidStage = "early" | "moderate" | "advanced";
+
+// Helper function to validate stage
+const validateStage = (stage: string): ValidStage => {
+  if (stage === "early" || stage === "moderate" || stage === "advanced") {
+    return stage as ValidStage;
+  }
+  // Default to "moderate" if not a valid stage
+  console.warn(`Invalid stage value: ${stage}. Defaulting to "moderate".`);
+  return "moderate";
+};
+
 interface PatientSelectorProps {
   onSelectPatient: (patient: Patient) => void;
 }
@@ -110,7 +123,7 @@ export default function PatientSelector({ onSelectPatient }: PatientSelectorProp
       caseStudy += ` They require supervision for medication management and safety.`;
     }
     
-    // Create the patient data loaded event
+    // Create the patient data loaded event with validated stage
     const patientDataEvent = new CustomEvent('patientDataLoaded', {
       detail: {
         patient: {
@@ -118,7 +131,8 @@ export default function PatientSelector({ onSelectPatient }: PatientSelectorProp
           name: patient.name,
           age: patient.age,
           diagnosis: patient.diagnosis,
-          stage: patient.stage
+          // Validate stage to ensure it's one of the allowed values
+          stage: validateStage(patient.stage)
         },
         caseStudy: caseStudy
       }

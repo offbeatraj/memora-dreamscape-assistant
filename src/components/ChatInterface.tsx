@@ -24,7 +24,7 @@ type Message = {
   metadata?: Record<string, any>;
 };
 
-// Define patient context interface
+// Define patient context interface with the correct stage type
 interface PatientContext {
   patient: {
     id: string;
@@ -36,6 +36,16 @@ interface PatientContext {
   } | null;
   caseStudy: string;
 }
+
+// Helper function to validate stage value
+const validateStage = (stage: string): "early" | "moderate" | "advanced" => {
+  if (stage === "early" || stage === "moderate" || stage === "advanced") {
+    return stage;
+  }
+  // Default to "moderate" if the value doesn't match the expected literals
+  console.warn(`Invalid stage value: ${stage}. Defaulting to "moderate".`);
+  return "moderate";
+};
 
 const initialMessages: Message[] = [
   {
@@ -80,7 +90,11 @@ export default function ChatInterface() {
       const { patient, caseStudy } = event.detail;
       
       setPatientContext({
-        patient,
+        patient: {
+          ...patient,
+          // Validate and convert stage to the correct type
+          stage: validateStage(patient.stage)
+        },
         caseStudy
       });
       
