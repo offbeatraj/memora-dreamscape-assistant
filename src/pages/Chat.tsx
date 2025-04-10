@@ -1,4 +1,3 @@
-
 import Layout from "@/components/Layout";
 import ChatInterface from "@/components/ChatInterface";
 import PatientAIAssistant from "@/components/PatientAIAssistant";
@@ -34,7 +33,6 @@ export default function Chat() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if we have an OpenAI API key on component mount
     const key = getOpenAIKey();
     setApiKey(key);
     setHasOpenAI(!!key);
@@ -69,7 +67,6 @@ export default function Chat() {
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
     
-    // Create the patient data loaded event
     const patientDataEvent = new CustomEvent('patientDataLoaded', {
       detail: {
         patient: {
@@ -83,7 +80,6 @@ export default function Chat() {
       }
     });
     
-    // Dispatch the event
     document.dispatchEvent(patientDataEvent);
     
     toast({

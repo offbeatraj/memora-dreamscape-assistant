@@ -354,10 +354,8 @@ export default function ChatInterface() {
               </div>
             )}
             
-            <div className="prose prose-sm max-w-none">
-              {message.content.split('\n').map((paragraph, idx) => (
-                <p key={idx} className="mb-2 last:mb-0">{paragraph}</p>
-              ))}
+            <div className="whitespace-pre-line text-sm">
+              {message.content}
             </div>
             
             {message.role === "assistant" && (
