@@ -259,7 +259,7 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
         response = response.split('[/INST]')[1].trim();
       } else {
         // Clean up response - remove the prompt part if it's included
-        const formattedPromptToCheck = modelName === 'mistral' ? formattedPrompt : prompt;
+        const formattedPromptToCheck = modelName === 'mistral' ? formatMistralPrompt(prompt) : prompt;
         if (response.startsWith(prompt)) {
           response = response.substring(prompt.length).trim();
         } else if (response.startsWith(formattedPromptToCheck)) {
