@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,7 +21,7 @@ interface Patient {
   age: number;
   gender: string;
   diagnosis: string;
-  stage: "early" | "moderate" | "advanced";
+  stage: string;
   last_visit: string;
   caregiverName?: string;
   caregiver_name?: string;
@@ -55,11 +54,9 @@ export default function PatientManager() {
         }
         
         if (data) {
-          // Convert last_visit to string format if it's not already
           const formattedData = data.map(patient => ({
             ...patient,
             last_visit: new Date(patient.last_visit).toISOString().split('T')[0],
-            // Map caregiver_name to caregiverName for compatibility with existing code
             caregiverName: patient.caregiver_name
           }));
           
