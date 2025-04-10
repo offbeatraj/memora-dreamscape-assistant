@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,9 @@ export default function PatientAIAssistant() {
         // Add initial greeting with patient name
         const initialGreeting = `I'm ready to answer questions about ${event.detail.patient.name}'s condition and care. What would you like to know?`;
         setResponse(initialGreeting);
+        
+        // Reset conversation history when loading a new patient
+        setConversationHistory([`AI: ${initialGreeting}`]);
       }
     };
 
@@ -52,6 +56,10 @@ export default function PatientAIAssistant() {
     e.preventDefault();
     if (!input.trim()) return;
     
+    // Add user's question to conversation history
+    const userQuestion = `Q: ${input}`;
+    setConversationHistory(prev => [...prev, userQuestion]);
+    
     setIsLoading(true);
     try {
       let prompt = input;
@@ -65,15 +73,15 @@ export default function PatientAIAssistant() {
         Case Study Details: ${patientData.caseStudy}
         
         Previous conversation context:
-        ${conversationHistory.slice(-4).join("\n")}`;
+        ${conversationHistory.slice(-6).join("\n")}`;
       }
       
       // Use the specialized patient model response function for patient-specific questions
       const aiResponse = await getPatientModelResponse(prompt, patientContext);
       setResponse(aiResponse);
       
-      // Update conversation history
-      setConversationHistory(prev => [...prev, `Q: ${input}`, `A: ${aiResponse}`]);
+      // Update conversation history with AI's response
+      setConversationHistory(prev => [...prev, `AI: ${aiResponse}`]);
     } catch (error) {
       console.error("Error getting response:", error);
       toast({
