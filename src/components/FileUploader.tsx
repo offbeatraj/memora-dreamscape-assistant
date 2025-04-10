@@ -82,7 +82,7 @@ export default function FileUploader() {
           .getPublicUrl(fileName);
 
         // 2. Create record in patient_files table using RPC function
-        const { error: dbError } = await supabase.rpc('insert_patient_file', {
+        const { error: dbError } = await (supabase.rpc('insert_patient_file', {
           p_patient_id: patientId,
           p_file_name: file.name,
           p_file_type: file.type,
@@ -90,7 +90,7 @@ export default function FileUploader() {
           p_file_path: urlData?.publicUrl ?? fileName,
           p_file_category: fileType,
           p_notes: notes.trim() ? notes : null
-        } as any); // Using type assertion to bypass TypeScript errors
+        } as any)); // Using type assertion to bypass TypeScript errors
         
         if (dbError) {
           throw dbError;

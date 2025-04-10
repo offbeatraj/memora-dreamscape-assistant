@@ -30,8 +30,8 @@ export default function UploadPage() {
       setLoading(true);
       
       // Use RPC function to get the data
-      const { data, error } = await supabase
-        .rpc('get_recent_files', { limit_count: 5 }) as any; // Using type assertion to bypass TypeScript errors
+      const { data, error } = await (supabase
+        .rpc('get_recent_files', { limit_count: 5 }) as any); // Using type assertion to bypass TypeScript errors
       
       if (error) throw error;
       
