@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 
 // Store the API key in local storage
@@ -60,6 +61,14 @@ const topicResponses: Record<string, string[]> = {
     "In Alzheimer's disease, the ability to form new memories is often impaired first, while long-term memories from many years ago might remain intact longer.",
     "Regular mental exercises like puzzles, reading, and learning new skills can help maintain cognitive function and potentially slow memory decline.",
     "Reminiscence therapy using old photos, music, and familiar objects can help trigger memories and improve mood in people with Alzheimer's.",
+  ],
+  symptoms: [
+    "**Early symptoms of Alzheimer's** include memory problems that disrupt daily life, such as *forgetting recently learned information* and important dates or events.",
+    "**Early Alzheimer's signs** often include *challenges in planning or solving problems*, like trouble following a familiar recipe or managing monthly bills.",
+    "**Common early symptoms** include *difficulty completing familiar tasks* at home, at work, or at leisure, such as driving to a familiar location or remembering rules of a favorite game.",
+    "**Early indicators of Alzheimer's** include *confusion with time or place* - people may lose track of dates, seasons, and the passage of time.",
+    "**Early warning signs** include *trouble understanding visual images and spatial relationships*, which may cause problems with reading, judging distance, and determining color or contrast.",
+    "**Key early symptoms** include *new problems with words* in speaking or writing, such as following or joining a conversation or struggling with vocabulary.",
   ],
   medication: [
     "It's important to take medications as prescribed. Setting alarms or using pill organizers can help maintain your medication schedule.",
@@ -136,10 +145,31 @@ const topicResponses: Record<string, string[]> = {
   ]
 };
 
+// Track recent responses to avoid repetition
+let recentGeneralResponses: string[] = [];
+let recentPatientResponses: string[] = [];
+
 // Get a more contextually relevant simulated response with improved topic detection
 const getSimulatedResponse = (userQuery: string, previousResponses: string[] = []): string => {
   // Convert query to lowercase for easier matching
   const query = userQuery.toLowerCase();
+  
+  // Add special handling for questions about early symptoms or signs of Alzheimer's
+  if (query.includes('early symptom') || query.includes('early sign') || 
+      (query.includes('symptom') && query.includes('alzheimer')) ||
+      (query.includes('sign') && query.includes('alzheimer'))) {
+    const responses = topicResponses.symptoms;
+    
+    // Avoid repeating the last response for this topic if possible
+    if (previousResponses.length > 0 && responses.length > 1) {
+      const filteredResponses = responses.filter(resp => !previousResponses.includes(resp));
+      if (filteredResponses.length > 0) {
+        return filteredResponses[Math.floor(Math.random() * filteredResponses.length)];
+      }
+    }
+    
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
   
   // More comprehensive keyword matching for better topic identification
   const topicKeywords = {
@@ -224,10 +254,6 @@ const getSimulatedResponse = (userQuery: string, previousResponses: string[] = [
   return generalResponses[Math.floor(Math.random() * generalResponses.length)];
 };
 
-// Track recent responses to avoid repetition
-let recentGeneralResponses: string[] = [];
-let recentPatientResponses: string[] = [];
-
 // Get response from the API model for general chatbot assistant
 export const getModelResponse = async (prompt: string): Promise<string> => {
   const apiKey = getOpenAIKey();
@@ -296,6 +322,24 @@ export const getPatientModelResponse = async (prompt: string, patientContext: st
   
   try {
     if (!apiKey) {
+      // Special handling for early symptom questions in patient context
+      if (prompt.toLowerCase().includes('early symptom') || 
+          prompt.toLowerCase().includes('early sign') || 
+          (prompt.toLowerCase().includes('symptom') && prompt.toLowerCase().includes('alzheimer'))) {
+        const responses = topicResponses.symptoms;
+        const response = responses[Math.floor(Math.random() * responses.length)];
+        
+        // Track recent responses
+        recentPatientResponses.push(response);
+        if (recentPatientResponses.length > 3) {
+          recentPatientResponses = recentPatientResponses.slice(-3);
+        }
+        
+        // Extract patient name if available in the context
+        const patientName = patientContext.match(/patient\s+(\w+)/i)?.[1] || '';
+        return patientName ? `For ${patientName}: ${response}` : response;
+      }
+      
       // Extract patient name if available in the context
       const patientName = patientContext.match(/patient\s+(\w+)/i)?.[1] || '';
       
