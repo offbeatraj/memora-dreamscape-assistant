@@ -20,6 +20,23 @@ const modelConfigs = {
   },
 };
 
+// Store the token in memory (not persisted after page reload)
+let hfToken: string | null = null;
+
+export function setHuggingFaceToken(token: string) {
+  hfToken = token;
+  // Clear model cache to reload with new token
+  Object.keys(modelInstances).forEach(key => {
+    delete modelInstances[key];
+  });
+  console.log("Hugging Face token set successfully. Models will reload with the new token.");
+  return true;
+}
+
+export function getHuggingFaceToken(): string | null {
+  return hfToken;
+}
+
 export async function getModelResponse(modelName: string, prompt: string): Promise<string> {
   try {
     console.log(`Using model: ${modelName}`);
@@ -39,10 +56,21 @@ export async function getModelResponse(modelName: string, prompt: string): Promi
     if (!modelInstances[modelName]) {
       console.log(`Loading model ${config.name}...`);
       try {
-        modelInstances[modelName] = await pipeline(config.task, config.name);
+        // Pass the token in options if we have it
+        const options: any = {};
+        if (hfToken) {
+          options.credentials = {
+            accessToken: hfToken
+          };
+        }
+        
+        modelInstances[modelName] = await pipeline(config.task, config.name, options);
       } catch (error) {
         console.error('Error loading model:', error);
-        return "I'm sorry, there was an error loading the AI model. Please try again or select a different model.";
+        if (!hfToken) {
+          return "Authentication error. Please provide a valid Hugging Face access token in the settings to use this model.";
+        }
+        return "I'm sorry, there was an error loading the AI model. Please check your Hugging Face token or try a different model.";
       }
     }
     

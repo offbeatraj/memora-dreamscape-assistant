@@ -2,16 +2,44 @@
 import Layout from "@/components/Layout";
 import ChatInterface from "@/components/ChatInterface";
 import PatientAIAssistant from "@/components/PatientAIAssistant";
-import { Brain, Settings } from "lucide-react";
+import { Brain, Settings, Key } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/use-toast";
+import { setHuggingFaceToken, getHuggingFaceToken } from "@/utils/aiModelUtils";
 
 export default function Chat() {
   const [aiModel, setAiModel] = useState("default");
+  const [hfToken, setHfToken] = useState("");
+
+  // Initialize the token input field with any existing token
+  useEffect(() => {
+    const currentToken = getHuggingFaceToken();
+    if (currentToken) {
+      setHfToken(currentToken);
+    }
+  }, []);
+
+  const saveHuggingFaceToken = () => {
+    if (setHuggingFaceToken(hfToken)) {
+      toast({
+        title: "Token saved",
+        description: "Your Hugging Face token has been saved.",
+      });
+    } else {
+      toast({
+        title: "Error saving token",
+        description: "There was an issue saving your Hugging Face token.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Layout>
@@ -29,7 +57,7 @@ export default function Chat() {
                   <span>Model: {aiModel === "default" ? "Default" : aiModel}</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[200px] p-0" align="end">
+              <PopoverContent className="w-[280px] p-0" align="end">
                 <div className="p-3">
                   <p className="text-sm font-medium mb-2">Select AI Model</p>
                   <Select
@@ -46,6 +74,33 @@ export default function Chat() {
                       <SelectItem value="flan-t5">FLAN-T5</SelectItem>
                     </SelectContent>
                   </Select>
+                  
+                  {aiModel !== "default" && (
+                    <div className="mt-4">
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="hfToken" className="text-sm font-medium">
+                          Hugging Face Access Token
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="hfToken"
+                            type="password"
+                            value={hfToken}
+                            onChange={(e) => setHfToken(e.target.value)}
+                            placeholder="hf_..."
+                            className="flex-1"
+                          />
+                          <Button size="sm" onClick={saveHuggingFaceToken} className="whitespace-nowrap">
+                            <Key className="h-3 w-3 mr-1" />
+                            Save
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Required to use Hugging Face models. Get your token at <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" className="underline">huggingface.co</a>
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
