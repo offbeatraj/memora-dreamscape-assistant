@@ -7,13 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, X, FileText, Loader2, Check, FileImage, File } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, uploadPatientFile } from "@/integrations/supabase/client";
 import { useParams } from "react-router-dom";
 
 export default function FileUploader() {
   const [files, setFiles] = useState<File[]>([]);
   const [notes, setNotes] = useState("");
-  const [fileType, setFileType] = useState<"medical" | "personal" | "other">("medical");
+  const [fileType, setFileType] = useState<"medical" | "personal" | "other" | "case">("medical");
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [patientId, setPatientId] = useState<string | null>(null);
@@ -66,41 +66,24 @@ export default function FileUploader() {
     try {
       // Process each file
       for (const file of files) {
-        // 1. Upload file to Supabase Storage
-        const fileName = `${patientId}/${Date.now()}-${file.name}`;
-        const { data: fileData, error: fileError } = await supabase.storage
-          .from('patient-files')
-          .upload(fileName, file);
+        // Upload file using the helper function from client.ts
+        const fileUrl = await uploadPatientFile(
+          file, 
+          patientId, 
+          fileType,
+          notes
+        );
         
-        if (fileError) {
-          throw fileError;
-        }
-
-        // Get the public URL for the file
-        const { data: urlData } = supabase.storage
-          .from('patient-files')
-          .getPublicUrl(fileName);
-
-        // 2. Create record in patient_files table using RPC function
-        // We need to cast as unknown and then as any to bypass TypeScript errors
-        const rpc = supabase.rpc as unknown as (
-          fn: string, 
-          params: Record<string, any>
-        ) => Promise<{ data: any; error: any }>;
-        
-        const { error: dbError } = await rpc('insert_patient_file', {
-          p_patient_id: patientId,
-          p_file_name: file.name,
-          p_file_type: file.type,
-          p_file_size: file.size,
-          p_file_path: urlData?.publicUrl ?? fileName,
-          p_file_category: fileType,
-          p_notes: notes.trim() ? notes : null
+        // Emit an event to notify components that a new file has been uploaded
+        const fileUploadEvent = new CustomEvent('patientFileUploaded', {
+          detail: {
+            patientId,
+            fileUrl,
+            fileType,
+            fileName: file.name
+          }
         });
-        
-        if (dbError) {
-          throw dbError;
-        }
+        document.dispatchEvent(fileUploadEvent);
       }
       
       setUploadSuccess(true);
@@ -149,7 +132,7 @@ export default function FileUploader() {
             <Label htmlFor="file-type" className="block mb-2">
               File Type
             </Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <Button
                 type="button"
                 variant={fileType === "medical" ? "default" : "outline"}
@@ -165,6 +148,14 @@ export default function FileUploader() {
                 onClick={() => setFileType("personal")}
               >
                 Personal Memories
+              </Button>
+              <Button
+                type="button"
+                variant={fileType === "case" ? "default" : "outline"}
+                className={fileType === "case" ? "bg-memora-purple hover:bg-memora-purple-dark" : ""}
+                onClick={() => setFileType("case")}
+              >
+                Case Files
               </Button>
               <Button
                 type="button"
@@ -241,7 +232,15 @@ export default function FileUploader() {
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder={fileType === "medical" ? "Add any relevant medical information..." : fileType === "personal" ? "Add context about these personal memories..." : "Add any helpful notes about these documents..."}
+              placeholder={
+                fileType === "medical" 
+                  ? "Add any relevant medical information..." 
+                  : fileType === "personal" 
+                  ? "Add context about these personal memories..." 
+                  : fileType === "case"
+                  ? "Describe the patient case scenario in detail..."
+                  : "Add any helpful notes about these documents..."
+              }
               className="bg-white/70"
             />
           </div>
@@ -257,7 +256,15 @@ export default function FileUploader() {
               ? "Processing Files..."
               : uploadSuccess
               ? "Files Successfully Processed"
-              : `Upload ${fileType === "medical" ? "Medical Records" : fileType === "personal" ? "Personal Memories" : "Documents"}`}
+              : `Upload ${
+                  fileType === "medical" 
+                    ? "Medical Records" 
+                    : fileType === "personal" 
+                    ? "Personal Memories" 
+                    : fileType === "case"
+                    ? "Patient Case Files"
+                    : "Documents"
+                }`}
           </Button>
         </form>
       </CardContent>

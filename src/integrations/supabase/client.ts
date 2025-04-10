@@ -38,6 +38,17 @@ export const uploadPatientFile = async (
       .from('patient-files')
       .getPublicUrl(fileName);
 
+    // If file is a case file, process text content if possible
+    let processedTextContent = null;
+    if (fileCategory === 'case' && (file.type === 'text/plain' || file.name.endsWith('.txt'))) {
+      try {
+        const text = await file.text();
+        processedTextContent = text;
+      } catch (e) {
+        console.error("Error extracting text from case file:", e);
+      }
+    }
+
     // Insert into patient_files table
     const { data, error } = await supabase
       .from('patient_files')
@@ -48,7 +59,7 @@ export const uploadPatientFile = async (
         file_size: file.size,
         file_path: urlData?.publicUrl ?? fileName,
         file_category: fileCategory,
-        notes: notes || null
+        notes: notes || (processedTextContent && fileCategory === 'case' ? processedTextContent.substring(0, 500) : null)
       });
     
     if (error) throw error;
@@ -57,6 +68,28 @@ export const uploadPatientFile = async (
   } catch (error) {
     console.error("Error uploading file:", error);
     throw error;
+  }
+};
+
+// Helper function to get patient case files
+export const getPatientCaseFiles = async (patientId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('patient_files')
+      .select('notes, file_name')
+      .eq('patient_id', patientId)
+      .eq('file_category', 'case')
+      .order('upload_date', { ascending: false });
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) return "";
+    
+    // Combine all notes from case files into a single text
+    return data.map(file => `Case file "${file.file_name}":\n${file.notes || "No description provided"}`).join("\n\n");
+  } catch (error) {
+    console.error("Error fetching patient case files:", error);
+    return "";
   }
 };
 

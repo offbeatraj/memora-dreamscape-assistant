@@ -4,9 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Bot, Send, Loader2 } from "lucide-react";
-import { getPatientModelResponse, storePatientData } from "@/utils/aiModelUtils";
+import { getPatientModelResponse, storePatientData, getPatientCaseFiles } from "@/utils/aiModelUtils";
 import { useToast } from "@/components/ui/use-toast";
 import PatientQuestionGenerator from "./PatientQuestionGenerator";
+import { savePatientConversation } from "@/integrations/supabase/client";
 
 export interface PatientDataEvent {
   patient: {
@@ -25,11 +26,12 @@ export default function PatientAIAssistant() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [patientData, setPatientData] = useState<PatientDataEvent | null>(null);
   const [conversationHistory, setConversationHistory] = useState<string[]>([]);
+  const [caseFiles, setCaseFiles] = useState<string>("");
   const { toast } = useToast();
 
   // Listen for patient data updates
   useEffect(() => {
-    const handlePatientDataLoaded = (event: CustomEvent<PatientDataEvent>) => {
+    const handlePatientDataLoaded = async (event: CustomEvent<PatientDataEvent>) => {
       setPatientData(event.detail);
       
       // Store patient data in utility for context-aware responses
@@ -42,6 +44,14 @@ export default function PatientAIAssistant() {
         
         // Reset conversation history when loading a new patient
         setConversationHistory([`AI: ${initialGreeting}`]);
+        
+        // Get case files for this patient
+        try {
+          const patientCaseFiles = await getPatientCaseFiles(event.detail.patient.id);
+          setCaseFiles(patientCaseFiles);
+        } catch (error) {
+          console.error("Error getting case files:", error);
+        }
       }
     };
 
@@ -67,10 +77,12 @@ export default function PatientAIAssistant() {
       
       // Add patient context if available
       if (patientData && patientData.patient) {
-        // Create a more detailed patient context
+        // Create a more detailed patient context with case files
         patientContext = `Context: This is about patient ${patientData.patient.name} who has ${patientData.patient.diagnosis} in ${patientData.patient.stage} stage. 
         Age: ${patientData.patient.age}
         Case Study Details: ${patientData.caseStudy}
+        
+        ${caseFiles ? `Additional Case Files: ${caseFiles}` : ''}
         
         Previous conversation context:
         ${conversationHistory.slice(-6).join("\n")}`;
@@ -79,6 +91,11 @@ export default function PatientAIAssistant() {
       // Use the specialized patient model response function for patient-specific questions
       const aiResponse = await getPatientModelResponse(prompt, patientContext);
       setResponse(aiResponse);
+      
+      // Save conversation to database if patient ID is available
+      if (patientData?.patient?.id) {
+        savePatientConversation(patientData.patient.id, `Q: ${input}\nA: ${aiResponse}`, "AI Caregiver Assistant");
+      }
       
       // Update conversation history with AI's response
       setConversationHistory(prev => [...prev, `AI: ${aiResponse}`]);
