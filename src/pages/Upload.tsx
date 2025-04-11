@@ -1,3 +1,4 @@
+
 import Layout from "@/components/Layout";
 import FileUploader from "@/components/FileUploader";
 import MockCaseFile from "@/components/MockCaseFile";
@@ -37,9 +38,11 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the type error by providing the correct type signature for the RPC call
+      // Fix the type error by explicitly casting the parameter object with a type annotation
       const { data, error } = await supabase
-        .rpc('get_recent_files', { limit_count: 5 } as { limit_count: number });
+        .rpc<any[]>('get_recent_files', { 
+          limit_count: 5
+        });
       
       if (error) throw error;
       
