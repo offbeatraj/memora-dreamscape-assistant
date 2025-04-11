@@ -51,10 +51,10 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the type error by properly typing the RPC call
+      // Fix the type error by explicitly typing the parameters
       const { data, error } = await supabase
         .rpc('get_recent_files', { 
-          limit_count: 5
+          limit_count: 5 as number 
         });
       
       if (error) throw error;
