@@ -178,7 +178,7 @@ If the question relates to a case scenario involving a patient with confusion, a
 Provide a compassionate, practical response that respects the dignity of the person with dementia.
 Your response should be direct and helpful for caregivers.`;
       
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      const response = await fetch("https://router.requesty.ai/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -230,7 +230,7 @@ export const getModelResponse = async (prompt: string): Promise<string> => {
   
   if (apiKey) {
     try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      const response = await fetch("https://router.requesty.ai/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
