@@ -8,7 +8,14 @@ import { Label } from "@/components/ui/label";
 import { HelpCircle, RefreshCw, Copy, Loader2, Send } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
-type PatientQuestionCategory = "cognitive" | "daily" | "medical" | "emotional" | "custom" | "case-specific";
+type PatientQuestionCategory = 
+  | "cognitive" 
+  | "daily" 
+  | "medical" 
+  | "emotional" 
+  | "custom" 
+  | "case-specific"
+  | "caregiving-strategies";
 
 interface PatientQuestionGeneratorProps {
   patientName: string;
@@ -38,8 +45,50 @@ export default function PatientQuestionGenerator({
     generateQuestionsForCategory(category);
   };
 
+  const extractCareScenarios = (caseStudy: string): string[] => {
+    // Look for key phrases that might indicate care scenarios
+    const scenarios = [];
+    
+    if (caseStudy.toLowerCase().includes('night') && 
+        (caseStudy.toLowerCase().includes('sleep') || 
+         caseStudy.toLowerCase().includes('bed') || 
+         caseStudy.toLowerCase().includes('awake'))) {
+      scenarios.push('nighttime issues');
+    }
+    
+    if (caseStudy.toLowerCase().includes('confus') || 
+        caseStudy.toLowerCase().includes('forget') || 
+        caseStudy.toLowerCase().includes('memory')) {
+      scenarios.push('confusion or disorientation');
+    }
+    
+    if (caseStudy.toLowerCase().includes('meal') || 
+        caseStudy.toLowerCase().includes('eat') || 
+        caseStudy.toLowerCase().includes('food')) {
+      scenarios.push('eating difficulties');
+    }
+    
+    if (caseStudy.toLowerCase().includes('bath') || 
+        caseStudy.toLowerCase().includes('shower') || 
+        caseStudy.toLowerCase().includes('hygiene')) {
+      scenarios.push('personal hygiene');
+    }
+    
+    if (caseStudy.toLowerCase().includes('agitat') || 
+        caseStudy.toLowerCase().includes('angry') || 
+        caseStudy.toLowerCase().includes('upset')) {
+      scenarios.push('agitation');
+    }
+    
+    // If we can't identify specific scenarios, return a generic scenario
+    return scenarios.length > 0 ? scenarios : ['care challenges'];
+  };
+
   const generateQuestionsForCategory = (questionCategory: PatientQuestionCategory) => {
     setLoading(true);
+    
+    // Extract care scenarios from case study if available
+    const careScenarios = caseStudy ? extractCareScenarios(caseStudy) : ['care challenges'];
     
     // In a real app, this would use AI to generate questions based on the case study
     setTimeout(() => {
@@ -47,12 +96,33 @@ export default function PatientQuestionGenerator({
       
       if (questionCategory === "case-specific") {
         // Generate questions based on case study
+        if (caseStudy.toLowerCase().includes('night') && 
+            (caseStudy.toLowerCase().includes('work') || 
+             caseStudy.toLowerCase().includes('getting ready'))) {
+          questions = [
+            `What would you, as ${patientName}'s caregiver, say to minimize distress when they wake up at night thinking they need to go to work?`,
+            `What environmental cues could help reorient ${patientName} during nighttime confusion episodes?`,
+            `How should I respond to ${patientName} when they insist on going to work in the middle of the night?`,
+            `What validation techniques would work best for ${patientName}'s confusion about needing to go to work?`,
+            `Should I explicitly tell ${patientName} they're retired when they're preparing for work at night?`
+          ];
+        } else {
+          questions = [
+            `What is the best approach to help ${patientName} with daily activities?`,
+            `How can we improve ${patientName}'s sleep quality based on the symptoms described?`,
+            `What techniques could help manage ${patientName}'s anxiety mentioned in the case study?`,
+            `How should we address ${patientName}'s difficulty with taking medication?`,
+            `What memory aids would be most helpful for ${patientName}?`
+          ];
+        }
+      } else if (questionCategory === "caregiving-strategies") {
+        // Generate strategy comparison questions
         questions = [
-          `What is the best approach to help ${patientName} with daily activities?`,
-          `How can we improve ${patientName}'s sleep quality based on the symptoms described?`,
-          `What techniques could help manage ${patientName}'s anxiety mentioned in the case study?`,
-          `How should we address ${patientName}'s difficulty with taking medication?`,
-          `What memory aids would be most helpful for ${patientName}?`
+          `What would be a person-centered approach to help ${patientName} during episodes of ${careScenarios[0]}?`,
+          `Compare validation therapy versus reality orientation for ${patientName} when dealing with ${careScenarios.length > 1 ? careScenarios[1] : careScenarios[0]}.`,
+          `What redirection techniques might work well for ${patientName} during periods of agitation?`,
+          `How can I balance honesty and compassion when ${patientName} asks questions about their condition?`,
+          `What's the best way to respond when ${patientName} asks repetitive questions or becomes fixated on a topic?`
         ];
       } else if (questionCategory === "cognitive") {
         questions = [
@@ -129,27 +199,31 @@ export default function PatientQuestionGenerator({
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="case-specific" id="case-specific" />
-                <Label htmlFor="case-specific">Case Study Specific</Label>
+                <Label htmlFor="case-specific">Case Specific</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="caregiving-strategies" id="caregiving-strategies" />
+                <Label htmlFor="caregiving-strategies">Care Strategies</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="cognitive" id="cognitive" />
-                <Label htmlFor="cognitive">Cognitive Assessment</Label>
+                <Label htmlFor="cognitive">Cognitive</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="daily" id="daily" />
-                <Label htmlFor="daily">Daily Functioning</Label>
+                <Label htmlFor="daily">Daily Care</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="medical" id="medical" />
-                <Label htmlFor="medical">Medical Care</Label>
+                <Label htmlFor="medical">Medical</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="emotional" id="emotional" />
-                <Label htmlFor="emotional">Emotional Wellbeing</Label>
+                <Label htmlFor="emotional">Emotional</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="custom" id="custom" />
-                <Label htmlFor="custom">Custom Topic</Label>
+                <Label htmlFor="custom">Custom</Label>
               </div>
             </RadioGroup>
           </div>

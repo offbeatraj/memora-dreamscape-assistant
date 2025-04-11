@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // API Key Utility Functions
@@ -156,25 +155,94 @@ export const storePatientConversation = (patientId: string, conversation: any) =
   }
 };
 
+// Enhanced function to identify and classify caregiver questions
+const identifyCaregiverQuestionType = (prompt: string): string => {
+  const lowerPrompt = prompt.toLowerCase();
+  
+  // Check for questions about caregiving strategies
+  if (lowerPrompt.includes("strategy") || 
+      lowerPrompt.includes("approach") || 
+      lowerPrompt.includes("what would you") || 
+      lowerPrompt.includes("what should i") || 
+      lowerPrompt.includes("how should i") ||
+      lowerPrompt.includes("how can i")) {
+    
+    // Identify specific situations
+    if (lowerPrompt.includes("confus") || lowerPrompt.includes("disoriented")) {
+      return "confusion_strategy";
+    } else if (lowerPrompt.includes("agitat") || lowerPrompt.includes("upset") || lowerPrompt.includes("angry")) {
+      return "agitation_strategy";
+    } else if (lowerPrompt.includes("sleep") || lowerPrompt.includes("night") || 
+               lowerPrompt.includes("bed") || lowerPrompt.includes("rest")) {
+      return "sleep_strategy";
+    } else if (lowerPrompt.includes("eat") || lowerPrompt.includes("food") || lowerPrompt.includes("meal")) {
+      return "eating_strategy";
+    } else if (lowerPrompt.includes("bath") || lowerPrompt.includes("shower") || lowerPrompt.includes("hygiene")) {
+      return "bathing_strategy";
+    }
+    
+    // General strategy question
+    return "general_strategy";
+  }
+  
+  // Information seeking questions
+  if (lowerPrompt.includes("what is") || 
+      lowerPrompt.includes("what are") || 
+      lowerPrompt.includes("explain") || 
+      lowerPrompt.includes("tell me about")) {
+    return "information";
+  }
+  
+  // Emotional support questions
+  if (lowerPrompt.includes("tired") || 
+      lowerPrompt.includes("exhausted") || 
+      lowerPrompt.includes("stressed") || 
+      lowerPrompt.includes("overwhelmed") ||
+      lowerPrompt.includes("help me cope")) {
+    return "caregiver_support";
+  }
+  
+  // Default - general question
+  return "general";
+};
+
 export const getPatientModelResponse = async (prompt: string, context?: string): Promise<string> => {
-  // Check if we have OpenAI API access
+  // Check if we have API access
   const apiKey = await getOpenAIKey();
   
   if (apiKey) {
     try {
+      // Identify question type to customize the system prompt
+      const questionType = identifyCaregiverQuestionType(prompt);
+      
+      // Customize system prompt based on question type
+      let systemPrompt = "You are a specialized AI assistant for Alzheimer's and dementia caregivers.";
+      
+      // Add specialized instructions based on question type
+      if (questionType.includes('strategy')) {
+        systemPrompt += `
+When providing care strategies for dementia patients, always prioritize these evidence-based approaches:
+
+1. Person-Centered Care - Always consider the individual's preferences, history, and dignity
+2. Validation - Acknowledge feelings without contradicting misconceptions
+3. Redirection - Gently guide attention to another topic or activity when distressed
+4. Environmental Adaptation - Suggest changes to surroundings that reduce stress
+5. Simple Communication - Use clear, short sentences and visual cues
+
+When responding to this caregiver question about ${questionType.replace('_strategy', '')}, offer at least two specific approaches:
+- One approach should demonstrate validation and redirection techniques
+- Compare this with direct reality orientation approaches (usually less effective)
+- Explain why person-centered approaches that preserve dignity are typically more successful
+
+Format your response to clearly label and compare these different approaches.`;
+      }
+      
       // Enhanced prompt for care strategies
       const enhancedPrompt = `
-You are a specialized AI assistant for Alzheimer's and dementia caregivers. 
-${context ? `\n${context}\n` : ''}
+${systemPrompt}
+${context ? `\nContext about the patient:\n${context}\n` : ''}
       
-The person is asking about: ${prompt}
-
-If the question relates to a case scenario involving a patient with confusion, apply these care strategies:
-1. Validation - Acknowledge the person's feelings and concerns without contradicting them
-2. Gentle Redirection - Calmly guide them to a different activity or topic
-3. Environmental Cues - Use the environment to help orient the person
-4. Person-Centered Communication - Focus on the person's emotions and needs, not just facts
-5. Avoid Reality Orientation - Don't directly contradict or correct misconceptions as this can cause distress
+The caregiver is asking about: ${prompt}
 
 Provide a compassionate, practical response that respects the dignity of the person with dementia.
 Your response should be direct and helpful for caregivers.`;
@@ -190,7 +258,7 @@ Your response should be direct and helpful for caregivers.`;
           messages: [
             {
               role: "system",
-              content: "You are a specialized AI assistant for Alzheimer's and dementia caregivers."
+              content: systemPrompt
             },
             {
               role: "user",
@@ -205,7 +273,7 @@ Your response should be direct and helpful for caregivers.`;
       const data = await response.json();
       
       if (data.error) {
-        console.error("OpenAI API error:", data.error);
+        console.error("API error:", data.error);
         return `Error from API: ${data.error.message || "Unknown error"}`;
       }
       
@@ -213,7 +281,7 @@ Your response should be direct and helpful for caregivers.`;
         return data.choices[0].message.content;
       } else {
         console.error("Unexpected API response:", data);
-        return getSimulatedResponse(prompt, context);
+        return getSimulatedResponse(prompt, context, questionType);
       }
     } catch (error) {
       console.error("Error calling API:", error);
@@ -226,7 +294,7 @@ Your response should be direct and helpful for caregivers.`;
 
 // Function to get a simulated response
 export const getModelResponse = async (prompt: string): Promise<string> => {
-  // Check if we have OpenAI API access
+  // Check if we have API access
   const apiKey = await getOpenAIKey();
   
   if (apiKey) {
@@ -277,26 +345,43 @@ export const getModelResponse = async (prompt: string): Promise<string> => {
 };
 
 // Enhanced simulated responses for dementia care scenarios
-const getSimulatedResponse = (prompt: string, context?: string): string => {
+const getSimulatedResponse = (prompt: string, context?: string, questionType: string = "general"): string => {
   const lowerPrompt = prompt.toLowerCase();
   const lowerContext = context ? context.toLowerCase() : '';
   
   // Check for case scenario about nighttime confusion
-  if ((lowerPrompt.includes('night') || lowerPrompt.includes('confused') || lowerPrompt.includes('work')) && 
-      (lowerContext.includes('pam') || lowerContext.includes('anxiously getting ready'))) {
-    if (lowerPrompt.includes('strategy') || lowerPrompt.includes('approach')) {
-      return `Based on the case scenario with Pam experiencing nighttime confusion about going to work, here are the recommended strategies:
+  if ((questionType === "sleep_strategy" || questionType === "confusion_strategy") &&
+      (lowerContext.includes('pam') || lowerContext.includes('anxiously getting ready') || 
+       lowerContext.includes('night') || lowerContext.includes('2 a.m.'))) {
+    
+    if (lowerPrompt.includes('what would you') || lowerPrompt.includes('what should') || 
+        lowerPrompt.includes('how should') || lowerPrompt.includes('approach')) {
+      return `## Care Strategies for Pam's Nighttime Confusion
 
-1. **Validation and Redirection** (Recommended): 
-   Instead of directly contradicting Pam's belief that she needs to go to work, acknowledge her feelings and gently redirect. For example: "I see you're getting ready. It's still nighttime though. Let's have some tea and rest until morning."
+Based on the case scenario where Pam is getting ready for work at 2 AM (despite being retired), here's a comparison of approaches:
 
-2. **Environmental Cues** (Recommended): 
-   Use the environment to help orient Pam to the time. For example: "Let me open the curtains so you can see it's dark outside. We still have time to sleep."
+### ✅ Recommended Approach: Validation & Redirection
 
-3. **Reality Orientation** (Not Recommended): 
-   Directly telling Pam "You're retired and need to go back to sleep" may cause distress and confusion.
+**What to say:** "I see you're getting ready, Mom. It looks like you're concerned about being late. It's still nighttime though - look how dark it is outside. Why don't we have some herbal tea and then get some more rest until morning? I'll make sure you're up when it's time."
 
-The best approach combines validation with gentle environmental cues. This respects Pam's dignity while helping her return to bed with minimal distress.`;
+**Why this works:**
+- Acknowledges Pam's feelings without contradicting her
+- Uses environmental cues (darkness outside) to provide gentle orientation
+- Offers a calming alternative (tea)
+- Provides reassurance about her underlying concern (being late)
+- Preserves dignity and reduces anxiety
+
+### ❌ Less Effective Approach: Reality Orientation
+
+**What to say:** "Mom, you're confused again. You've been retired for 7 years and don't need to go to work. It's the middle of the night - go back to bed."
+
+**Why this doesn't work well:**
+- Creates confrontation and may increase agitation
+- May trigger shame or embarrassment
+- Doesn't address the emotional need behind the behavior
+- Could damage trust and increase resistance
+
+The validation and redirection approach respects Pam as a person while gently guiding her back to bed, which minimizes confusion and distress while maintaining her dignity.`;
     } else {
       return `For Pam's nighttime confusion about going to work, I recommend using validation and redirection rather than reality orientation.
 
@@ -313,7 +398,7 @@ This respects Pam's dignity while gently guiding her back to bed, minimizing con
   }
   
   // Check for specific patient questions
-  if (context && lowerPrompt.includes('alzheimer') || lowerPrompt.includes('dementia')) {
+  if (context && (lowerPrompt.includes('alzheimer') || lowerPrompt.includes('dementia'))) {
     if (lowerPrompt.includes('medicine') || lowerPrompt.includes('medication')) {
       return `Based on the information provided, the patient should continue with their prescribed medication regimen for Alzheimer's disease. Common medications include cholinesterase inhibitors (like donepezil, rivastigmine, or galantamine) and memantine.
 

@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { savePatientConversation } from "@/integrations/supabase/client";
+import { FileText, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Sample case scenario
 const sampleCaseData = {
@@ -39,6 +41,7 @@ interface MockCaseFileProps {
 
 export default function MockCaseFile({ patientId, onLoadCase }: MockCaseFileProps) {
   const [loadedCase, setLoadedCase] = useState(false);
+  const navigate = useNavigate();
 
   const handleLoadCase = async () => {
     try {
@@ -62,20 +65,39 @@ export default function MockCaseFile({ patientId, onLoadCase }: MockCaseFileProp
     }
   };
 
+  const goToCreateCase = () => {
+    // Navigate to upload page with patient ID
+    if (patientId) {
+      navigate(`/upload/${patientId}`);
+    } else {
+      navigate('/upload');
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Example Case Scenario</span>
-          {!loadedCase && patientId && (
-            <Button 
-              onClick={handleLoadCase} 
-              size="sm" 
-              className="bg-memora-purple hover:bg-memora-purple-dark"
+          <div className="flex gap-2">
+            <Button
+              onClick={goToCreateCase}
+              size="sm"
+              variant="outline"
+              className="flex items-center gap-1"
             >
-              Load This Case
+              <Plus className="h-4 w-4" /> Create Custom Case
             </Button>
-          )}
+            {!loadedCase && patientId && (
+              <Button 
+                onClick={handleLoadCase} 
+                size="sm" 
+                className="bg-memora-purple hover:bg-memora-purple-dark"
+              >
+                <FileText className="mr-2 h-4 w-4" /> Load Example
+              </Button>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -112,7 +134,7 @@ export default function MockCaseFile({ patientId, onLoadCase }: MockCaseFileProp
           <div className="p-4 bg-amber-50 border-l-4 border-amber-400 rounded-lg">
             <h3 className="font-medium text-amber-800">Try asking the AI:</h3>
             <ul className="list-disc list-inside text-sm space-y-1 mt-1">
-              <li>"What should I say when my mother wakes up at night confused about going to work?"</li>
+              <li>"What would you, as Laurel, her daughter and caregiver, say to Pam to minimize the level of distress and get her to return to bed?"</li>
               <li>"How should I respond to nighttime confusion about work?"</li>
               <li>"What's the best approach when my mother with Alzheimer's thinks she needs to go to work?"</li>
             </ul>

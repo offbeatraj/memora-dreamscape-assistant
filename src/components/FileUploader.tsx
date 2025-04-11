@@ -5,10 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, X, FileText, Loader2, Check, FileImage, File } from "lucide-react";
+import { Upload, X, FileText, Loader2, Check, FileImage, File, Edit3 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase, uploadPatientFile } from "@/integrations/supabase/client";
 import { useParams } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function FileUploader() {
   const [files, setFiles] = useState<File[]>([]);
@@ -17,6 +18,9 @@ export default function FileUploader() {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [patientId, setPatientId] = useState<string | null>(null);
+  const [caseText, setCaseText] = useState("");
+  const [caseTitle, setCaseTitle] = useState("");
+  const [uploadMode, setUploadMode] = useState<"file" | "text">("file");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
@@ -42,15 +46,6 @@ export default function FileUploader() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (files.length === 0) {
-      toast({
-        title: "No files selected",
-        description: "Please select at least one file to upload.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     // Check if we have a patient ID
     if (!patientId) {
       toast({
@@ -64,40 +59,90 @@ export default function FileUploader() {
     setUploading(true);
     
     try {
-      // Process each file
-      for (const file of files) {
-        // Upload file using the helper function from client.ts
+      if (uploadMode === "file" && files.length === 0) {
+        toast({
+          title: "No files selected",
+          description: "Please select at least one file to upload.",
+          variant: "destructive",
+        });
+        setUploading(false);
+        return;
+      }
+      
+      if (uploadMode === "text" && fileType === "case") {
+        if (!caseText.trim()) {
+          toast({
+            title: "No case text entered",
+            description: "Please enter case details in the text field.",
+            variant: "destructive",
+          });
+          setUploading(false);
+          return;
+        }
+        
+        // Create a text file from the case text input
+        const caseTitle = caseTitle || "Case Scenario";
+        const fileName = `${caseTitle.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+        const file = new File([caseText], fileName, { type: "text/plain" });
+        
+        // Upload the text file
         const fileUrl = await uploadPatientFile(
-          file, 
-          patientId, 
-          fileType,
-          notes
+          file,
+          patientId,
+          "case",
+          caseText
         );
         
-        // Emit an event to notify components that a new file has been uploaded
+        // Emit event for file upload
         const fileUploadEvent = new CustomEvent('patientFileUploaded', {
           detail: {
             patientId,
             fileUrl,
-            fileType,
-            fileName: file.name
+            fileType: "case",
+            fileName
           }
         });
         document.dispatchEvent(fileUploadEvent);
+        
+      } else if (uploadMode === "file") {
+        // Process each file
+        for (const file of files) {
+          // Upload file using the helper function from client.ts
+          const fileUrl = await uploadPatientFile(
+            file, 
+            patientId, 
+            fileType,
+            notes
+          );
+          
+          // Emit an event to notify components that a new file has been uploaded
+          const fileUploadEvent = new CustomEvent('patientFileUploaded', {
+            detail: {
+              patientId,
+              fileUrl,
+              fileType,
+              fileName: file.name
+            }
+          });
+          document.dispatchEvent(fileUploadEvent);
+        }
       }
       
       setUploadSuccess(true);
       
       toast({
-        title: "Files uploaded successfully",
-        description: `${files.length} file(s) have been processed and added to the patient's record.`,
+        title: uploadMode === "text" ? "Case scenario created" : "Files uploaded successfully",
+        description: uploadMode === "text" 
+          ? "Your case scenario has been saved to the patient's record." 
+          : `${files.length} file(s) have been processed and added to the patient's record.`,
       });
       
       // Reset form after successful upload
       setTimeout(() => {
         setFiles([]);
         setNotes("");
-        setFileType("medical");
+        setCaseText("");
+        setCaseTitle("");
         setUploadSuccess(false);
       }, 3000);
     } catch (error) {
@@ -168,30 +213,81 @@ export default function FileUploader() {
             </div>
           </div>
           
-          <div className="mb-6">
-            <Label htmlFor="file-upload" className="block mb-2">
-              Upload Files
-            </Label>
-            <div
-              className="border-2 border-dashed border-memora-purple/30 rounded-lg p-8 text-center cursor-pointer hover:bg-memora-purple/5 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="h-8 w-8 mx-auto mb-2 text-memora-purple" />
-              <p className="mb-1 font-medium">Click to upload or drag and drop</p>
-              <p className="text-sm text-muted-foreground">
-                PDF, DOCX, JPG, PNG (Max 10MB each)
-              </p>
-              <Input
-                id="file-upload"
-                ref={fileInputRef}
-                type="file"
-                multiple
-                className="hidden"
-                onChange={handleFileChange}
-                accept=".pdf,.docx,.jpg,.jpeg,.png,.txt"
-              />
+          {fileType === "case" && (
+            <div className="mb-6">
+              <Label className="block mb-4">Upload Method</Label>
+              <Tabs defaultValue="file" value={uploadMode} onValueChange={(value) => setUploadMode(value as "file" | "text")}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="file">Upload File</TabsTrigger>
+                  <TabsTrigger value="text">Write Case Study</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
-          </div>
+          )}
+          
+          {(uploadMode === "file" || fileType !== "case") && (
+            <div className="mb-6">
+              <Label htmlFor="file-upload" className="block mb-2">
+                Upload Files
+              </Label>
+              <div
+                className="border-2 border-dashed border-memora-purple/30 rounded-lg p-8 text-center cursor-pointer hover:bg-memora-purple/5 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-8 w-8 mx-auto mb-2 text-memora-purple" />
+                <p className="mb-1 font-medium">Click to upload or drag and drop</p>
+                <p className="text-sm text-muted-foreground">
+                  PDF, DOCX, JPG, PNG (Max 10MB each)
+                </p>
+                <Input
+                  id="file-upload"
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                  accept=".pdf,.docx,.jpg,.jpeg,.png,.txt"
+                />
+              </div>
+            </div>
+          )}
+
+          {uploadMode === "text" && fileType === "case" && (
+            <div className="mb-6">
+              <div className="mb-4">
+                <Label htmlFor="case-title" className="block mb-2">
+                  Case Title
+                </Label>
+                <Input
+                  id="case-title"
+                  value={caseTitle}
+                  onChange={(e) => setCaseTitle(e.target.value)}
+                  placeholder="Enter a title for this case scenario"
+                  className="bg-white/70"
+                />
+              </div>
+              <div>
+                <Label htmlFor="case-text" className="block mb-2">
+                  Case Study Details
+                </Label>
+                <div className="bg-memora-purple/10 p-3 rounded-md mb-3 text-sm">
+                  <p>Write a detailed case scenario about the patient, including:</p>
+                  <ul className="list-disc list-inside mt-1 pl-2 space-y-1">
+                    <li>Background information (age, diagnosis, living situation)</li>
+                    <li>The specific care challenge or situation</li>
+                    <li>Any behaviors or symptoms that need to be addressed</li>
+                  </ul>
+                </div>
+                <Textarea
+                  id="case-text"
+                  value={caseText}
+                  onChange={(e) => setCaseText(e.target.value)}
+                  placeholder="Example: Pam is a 73-year-old woman diagnosed with Alzheimer's disease who lives with her daughter. One night, her daughter is awakened at 2 a.m. by Pam anxiously getting ready for work (even though she retired 7 years ago)..."
+                  className="bg-white/70 min-h-[200px]"
+                />
+              </div>
+            </div>
+          )}
 
           {files.length > 0 && (
             <div className="mb-6">
@@ -224,26 +320,28 @@ export default function FileUploader() {
             </div>
           )}
 
-          <div className="mb-6">
-            <Label htmlFor="notes" className="block mb-2">
-              Additional Notes
-            </Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={
-                fileType === "medical" 
-                  ? "Add any relevant medical information..." 
-                  : fileType === "personal" 
-                  ? "Add context about these personal memories..." 
-                  : fileType === "case"
-                  ? "Describe the patient case scenario in detail..."
-                  : "Add any helpful notes about these documents..."
-              }
-              className="bg-white/70"
-            />
-          </div>
+          {(uploadMode === "file" || fileType !== "case") && (
+            <div className="mb-6">
+              <Label htmlFor="notes" className="block mb-2">
+                Additional Notes
+              </Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={
+                  fileType === "medical" 
+                    ? "Add any relevant medical information..." 
+                    : fileType === "personal" 
+                    ? "Add context about these personal memories..." 
+                    : fileType === "case"
+                    ? "Describe the patient case scenario in detail..."
+                    : "Add any helpful notes about these documents..."
+                }
+                className="bg-white/70"
+              />
+            </div>
+          )}
 
           <Button
             type="submit"
@@ -253,18 +351,20 @@ export default function FileUploader() {
             {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {uploadSuccess && <Check className="mr-2 h-4 w-4" />}
             {uploading
-              ? "Processing Files..."
+              ? "Processing..."
               : uploadSuccess
-              ? "Files Successfully Processed"
-              : `Upload ${
-                  fileType === "medical" 
-                    ? "Medical Records" 
-                    : fileType === "personal" 
-                    ? "Personal Memories" 
-                    : fileType === "case"
-                    ? "Patient Case Files"
-                    : "Documents"
-                }`}
+              ? "Successfully Processed"
+              : uploadMode === "text" && fileType === "case" 
+                ? "Save Case Study" 
+                : `Upload ${
+                    fileType === "medical" 
+                      ? "Medical Records" 
+                      : fileType === "personal" 
+                      ? "Personal Memories" 
+                      : fileType === "case"
+                      ? "Patient Case Files"
+                      : "Documents"
+                  }`}
           </Button>
         </form>
       </CardContent>

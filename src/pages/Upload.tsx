@@ -1,3 +1,4 @@
+
 import Layout from "@/components/Layout";
 import FileUploader from "@/components/FileUploader";
 import MockCaseFile from "@/components/MockCaseFile";
@@ -114,7 +115,7 @@ export default function UploadPage() {
             <h1 className="text-2xl font-bold">Upload Information</h1>
           </div>
           <p className="text-muted-foreground mb-6">
-            Upload medical records, personal memories, or any relevant information 
+            Upload medical records, personal memories, case scenarios, or any relevant information 
             to help personalize your experience with Memora.
           </p>
           
@@ -122,7 +123,7 @@ export default function UploadPage() {
           
           {selectedPatientId && (
             <div className="mt-8">
-              <h2 className="text-lg font-medium mb-4">Sample Case Scenarios</h2>
+              <h2 className="text-lg font-medium mb-4">Case Scenarios</h2>
               <MockCaseFile 
                 patientId={selectedPatientId} 
                 onLoadCase={handleCaseLoaded}
