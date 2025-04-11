@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,7 +25,6 @@ export default function FileUploader() {
   const { id } = useParams<{ id: string }>();
 
   useEffect(() => {
-    // Set patient ID from route params if available
     if (id) {
       setPatientId(id);
     }
@@ -46,7 +44,6 @@ export default function FileUploader() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if we have a patient ID
     if (!patientId) {
       toast({
         title: "Patient not found",
@@ -80,15 +77,12 @@ export default function FileUploader() {
           return;
         }
         
-        // Create a text file from the case text input
         const titleToUse = caseTitle || "Case Scenario";
         const fileName = `${titleToUse.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
         
-        // Create file using the proper Blob constructor
         const blob = new Blob([caseText], { type: "text/plain" });
         const file = new File([blob], fileName, { type: "text/plain" });
         
-        // Upload the text file
         const fileUrl = await uploadPatientFile(
           file,
           patientId,
@@ -96,7 +90,6 @@ export default function FileUploader() {
           caseText
         );
         
-        // Emit event for file upload
         const fileUploadEvent = new CustomEvent('patientFileUploaded', {
           detail: {
             patientId,
@@ -108,9 +101,7 @@ export default function FileUploader() {
         document.dispatchEvent(fileUploadEvent);
         
       } else if (uploadMode === "file") {
-        // Process each file
         for (const file of files) {
-          // Upload file using the helper function from client.ts
           const fileUrl = await uploadPatientFile(
             file, 
             patientId, 
@@ -118,7 +109,6 @@ export default function FileUploader() {
             notes
           );
           
-          // Emit an event to notify components that a new file has been uploaded
           const fileUploadEvent = new CustomEvent('patientFileUploaded', {
             detail: {
               patientId,
@@ -140,7 +130,6 @@ export default function FileUploader() {
           : `${files.length} file(s) have been processed and added to the patient's record.`,
       });
       
-      // Reset form after successful upload
       setTimeout(() => {
         setFiles([]);
         setNotes("");
