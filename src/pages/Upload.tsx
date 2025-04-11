@@ -51,15 +51,15 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the type error by explicitly typing the parameters
+      // Fix the type error by properly typing both the parameters and the response
       const { data, error } = await supabase
-        .rpc('get_recent_files', { 
-          limit_count: 5 as number 
+        .rpc<RecentFile[]>('get_recent_files', { 
+          limit_count: 5 
         });
       
       if (error) throw error;
       
-      setRecentFiles((data as RecentFile[]) || []);
+      setRecentFiles(data || []);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
