@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // API Key Utility Functions
@@ -185,7 +186,7 @@ Your response should be direct and helpful for caregivers.`;
           Authorization: `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "google/gemini-2.0-flash-exp",
           messages: [
             {
               role: "system",
@@ -205,7 +206,7 @@ Your response should be direct and helpful for caregivers.`;
       
       if (data.error) {
         console.error("OpenAI API error:", data.error);
-        return `Error from OpenAI API: ${data.error.message || "Unknown error"}`;
+        return `Error from API: ${data.error.message || "Unknown error"}`;
       }
       
       if (data.choices && data.choices[0]) {
@@ -215,7 +216,7 @@ Your response should be direct and helpful for caregivers.`;
         return getSimulatedResponse(prompt, context);
       }
     } catch (error) {
-      console.error("Error calling OpenAI:", error);
+      console.error("Error calling API:", error);
       return getSimulatedResponse(prompt, context);
     }
   } else {
@@ -237,7 +238,7 @@ export const getModelResponse = async (prompt: string): Promise<string> => {
           Authorization: `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "google/gemini-2.0-flash-exp",
           messages: [
             {
               role: "system",
@@ -256,8 +257,8 @@ export const getModelResponse = async (prompt: string): Promise<string> => {
       const data = await response.json();
       
       if (data.error) {
-        console.error("OpenAI API error:", data.error);
-        return `Error from OpenAI API: ${data.error.message || "Unknown error"}`;
+        console.error("API error:", data.error);
+        return `Error from API: ${data.error.message || "Unknown error"}`;
       }
       
       if (data.choices && data.choices[0]) {
@@ -267,7 +268,7 @@ export const getModelResponse = async (prompt: string): Promise<string> => {
         return getSimulatedResponse(prompt);
       }
     } catch (error) {
-      console.error("Error calling OpenAI:", error);
+      console.error("Error calling API:", error);
       return getSimulatedResponse(prompt);
     }
   } else {
