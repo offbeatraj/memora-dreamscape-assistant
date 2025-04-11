@@ -18,8 +18,20 @@ import { Button } from "@/components/ui/button";
 import { FileText, Download, Trash } from "lucide-react";
 import { useParams } from "react-router-dom";
 
+// Define an interface for the recent files
+interface RecentFile {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string;
+  file_category: string;
+  upload_date: string;
+  patient_name: string;
+}
+
 export default function UploadPage() {
-  const [recentFiles, setRecentFiles] = useState<any[]>([]);
+  const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -38,15 +50,15 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the type error by providing both type arguments - the return type and the parameters type
+      // Fix the type error by properly typing the RPC call
       const { data, error } = await supabase
-        .rpc<any[], { limit_count: number }>('get_recent_files', { 
+        .rpc('get_recent_files', { 
           limit_count: 5
         });
       
       if (error) throw error;
       
-      setRecentFiles(data || []);
+      setRecentFiles(data as RecentFile[] || []);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
