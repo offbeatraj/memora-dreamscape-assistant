@@ -12,28 +12,18 @@ export const getOpenAIKey = async (): Promise<string> => {
   try {
     // Try to get from Supabase
     const { data, error } = await supabase
-      .from('api_keys')
-      .select('key_value')
-      .eq('key_type', 'openai')
-      .eq('is_active', true)
-      .single();
+      .rpc('get_api_key', { key_type_param: 'openai' });
     
     if (error) throw error;
     
-    if (data && data.key_value) {
-      cachedOpenAIKey = data.key_value;
-      return data.key_value;
+    if (data && data.length > 0) {
+      cachedOpenAIKey = data;
+      return data;
     }
     
     // Fallback to localStorage if not in Supabase
     const localKey = localStorage.getItem('openai_api_key') || '';
     if (localKey) {
-      // If we found a key in localStorage, store it in Supabase for future use
-      await supabase
-        .from('api_keys')
-        .upsert({ key_type: 'openai', key_value: localKey })
-        .select();
-      
       cachedOpenAIKey = localKey;
     }
     
@@ -49,24 +39,12 @@ export const getOpenAIKey = async (): Promise<string> => {
 export const setOpenAIKey = async (key: string): Promise<void> => {
   try {
     if (key) {
-      // Store in Supabase
-      await supabase
-        .from('api_keys')
-        .upsert({ key_type: 'openai', key_value: key })
-        .select();
-      
       // Update cache
       cachedOpenAIKey = key;
       
       // Keep in localStorage as fallback
       localStorage.setItem('openai_api_key', key);
     } else {
-      // Remove from Supabase
-      await supabase
-        .from('api_keys')
-        .update({ is_active: false })
-        .eq('key_type', 'openai');
-      
       // Clear cache
       cachedOpenAIKey = null;
       
@@ -74,7 +52,7 @@ export const setOpenAIKey = async (key: string): Promise<void> => {
       localStorage.removeItem('openai_api_key');
     }
   } catch (error) {
-    console.error('Error setting OpenAI key in database:', error);
+    console.error('Error setting OpenAI key:', error);
     // Fallback to just localStorage
     if (key) {
       localStorage.setItem('openai_api_key', key);
@@ -215,7 +193,7 @@ export const getPatientModelResponse = async (prompt: string, context?: string):
       const enhancedPrompt = `
 You are a specialized AI assistant for Alzheimer's and dementia caregivers. 
 ${context ? `\n${context}\n` : ''}
-
+      
 The person is asking about: ${prompt}
 
 If the question relates to a case scenario involving a patient with confusion, apply these care strategies:
