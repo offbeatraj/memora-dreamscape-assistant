@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Trash } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { format } from "date-fns";
 
 // Define an interface for the recent files
 interface RecentFile {
@@ -58,7 +59,7 @@ export default function UploadPage() {
       
       if (error) throw error;
       
-      setRecentFiles(data as RecentFile[] || []);
+      setRecentFiles((data as RecentFile[]) || []);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
@@ -107,6 +108,16 @@ export default function UploadPage() {
     if (bytes < 1024) return bytes + ' B';
     else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     else return (bytes / 1048576).toFixed(1) + ' MB';
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, 'MMM d, yyyy');
+    } catch (error) {
+      console.error("Date formatting error:", error);
+      return "Invalid date";
+    }
   };
 
   const handleCaseLoaded = (caseData: any) => {
@@ -168,7 +179,7 @@ export default function UploadPage() {
                         <TableCell>{file.patient_name}</TableCell>
                         <TableCell>{file.file_category}</TableCell>
                         <TableCell>{formatFileSize(file.file_size)}</TableCell>
-                        <TableCell>{new Date(file.upload_date).toLocaleDateString()}</TableCell>
+                        <TableCell>{formatDate(file.upload_date)}</TableCell>
                         <TableCell className="text-right">
                           <Button 
                             variant="ghost" 
