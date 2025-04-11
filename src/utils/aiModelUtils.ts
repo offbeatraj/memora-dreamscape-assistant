@@ -13,7 +13,7 @@ export const getOpenAIKey = async (): Promise<string> => {
   try {
     // Try to get from Supabase
     const { data, error } = await supabase
-      .rpc('get_api_key', { key_type_param: 'openai' });
+      .rpc('get_api_key', { key_type_param: 'openai' } as { key_type_param: string });
     
     if (error) throw error;
     
