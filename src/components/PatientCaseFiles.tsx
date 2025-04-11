@@ -171,7 +171,7 @@ export default function PatientCaseFiles({ patientId }: PatientCaseFilesProps) {
             <FileText className="h-10 w-10 text-gray-300 mx-auto" />
             <p className="mt-2 text-sm text-muted-foreground">No case files uploaded yet</p>
             <p className="text-xs text-muted-foreground">
-              Upload case files from the "Upload" section to provide more context to the AI assistant
+              Upload case files from the "Upload" section or use the example case scenarios to provide context to the AI assistant
             </p>
           </div>
         )}
