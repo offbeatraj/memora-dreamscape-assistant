@@ -16,7 +16,7 @@ export const getOpenAIKey = async (): Promise<string> => {
     
     if (error) throw error;
     
-    if (data && data.length > 0) {
+    if (data) {
       cachedOpenAIKey = data;
       return data;
     }
