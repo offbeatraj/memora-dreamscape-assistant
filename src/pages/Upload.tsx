@@ -1,6 +1,6 @@
-
 import Layout from "@/components/Layout";
 import FileUploader from "@/components/FileUploader";
+import MockCaseFile from "@/components/MockCaseFile";
 import { Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,15 +15,23 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Trash } from "lucide-react";
+import { useParams } from "react-router-dom";
 
 export default function UploadPage() {
   const [recentFiles, setRecentFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { id } = useParams<{ id: string }>();
 
   useEffect(() => {
     fetchRecentFiles();
-  }, []);
+    
+    // Set patient ID from route params if available
+    if (id) {
+      setSelectedPatientId(id);
+    }
+  }, [id]);
 
   const fetchRecentFiles = async () => {
     try {
@@ -90,6 +98,13 @@ export default function UploadPage() {
     else return (bytes / 1048576).toFixed(1) + ' MB';
   };
 
+  const handleCaseLoaded = (caseData: any) => {
+    toast({
+      title: "Case Loaded",
+      description: "The sample case has been added to the patient's records.",
+    });
+  };
+
   return (
     <Layout>
       <div className="max-w-3xl mx-auto">
@@ -104,6 +119,16 @@ export default function UploadPage() {
           </p>
           
           <FileUploader />
+          
+          {selectedPatientId && (
+            <div className="mt-8">
+              <h2 className="text-lg font-medium mb-4">Sample Case Scenarios</h2>
+              <MockCaseFile 
+                patientId={selectedPatientId} 
+                onLoadCase={handleCaseLoaded}
+              />
+            </div>
+          )}
           
           <div className="mt-8">
             <h2 className="text-lg font-medium mb-4">Recent Uploads</h2>

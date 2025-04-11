@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,12 +50,33 @@ export default function PatientAIAssistant() {
       }
     };
 
+    // Listen for file upload events to refresh case files
+    const handleFileUploaded = async (event: CustomEvent<{patientId: string}>) => {
+      if (patientData?.patient && event.detail.patientId === patientData.patient.id) {
+        try {
+          const updatedCaseFiles = await getPatientCaseFiles(patientData.patient.id);
+          setCaseFiles(updatedCaseFiles);
+          
+          if (updatedCaseFiles && !caseFiles) {
+            toast({
+              title: "Case Files Added",
+              description: "New case information is now available to the assistant.",
+            });
+          }
+        } catch (error) {
+          console.error("Error refreshing case files:", error);
+        }
+      }
+    };
+
     document.addEventListener('patientDataLoaded', handlePatientDataLoaded as EventListener);
+    document.addEventListener('patientFileUploaded', handleFileUploaded as EventListener);
     
     return () => {
       document.removeEventListener('patientDataLoaded', handlePatientDataLoaded as EventListener);
+      document.removeEventListener('patientFileUploaded', handleFileUploaded as EventListener);
     };
-  }, []);
+  }, [patientData, caseFiles]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,11 +169,19 @@ export default function PatientAIAssistant() {
                       </Button>
                     </form>
 
+                    {caseFiles && (
+                      <div className="mt-3 px-3 py-2 bg-blue-50 border-l-4 border-blue-300 rounded text-sm">
+                        <p className="text-blue-800">
+                          <strong>Case information available</strong> - The AI has access to this patient's case files
+                        </p>
+                      </div>
+                    )}
+
                     {response && (
                       <div className="mt-4 bg-white p-4 rounded-lg border border-memora-purple/20">
                         <div className="flex items-center gap-2 mb-2">
                           <Bot className="h-5 w-5 text-memora-purple" />
-                          <h3 className="font-medium">Gemini Response</h3>
+                          <h3 className="font-medium">AI Response</h3>
                         </div>
                         <p className="text-sm whitespace-pre-wrap">{response}</p>
                       </div>

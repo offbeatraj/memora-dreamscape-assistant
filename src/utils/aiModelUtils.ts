@@ -210,6 +210,14 @@ const topicResponses: Record<string, string[]> = {
     "Reducing stress through relaxation techniques can help with managing symptoms, as stress can sometimes worsen cognitive symptoms.",
     "Adequate sleep is important for cognitive function and emotional well-being, and sleep disturbances should be addressed with a healthcare provider.",
     "While there is no cure for Alzheimer's disease, treatments can help manage symptoms and potentially slow disease progression.",
+  ],
+  strategies: [
+    "For this nighttime confusion scenario, a validation approach works better than reality orientation. Instead of saying 'You're retired, go back to sleep,' try acknowledging their feelings with 'I see you're getting ready. It's still nighttime though. Let's rest until morning.'",
+    "When someone with Alzheimer's is confused about time, using environmental cues like opening curtains to show darkness can help reorient them gently without confrontation.",
+    "A person-centered approach focuses on the emotional need behind behaviors. If they're anxiously preparing for work, they may be seeking purpose or routine, which you can address with reassurance.",
+    "Validation therapy acknowledges feelings as real even when the situation isn't accurate. This builds trust and reduces anxiety compared to correcting misconceptions.",
+    "Redirection works well after validation - first acknowledge their feelings, then suggest an alternative like 'Let's have some tea and get comfortable until morning. I'll make sure you're up on time.'",
+    "Avoid arguing or using logic to convince someone with Alzheimer's they're wrong, as this can increase agitation. Instead, focus on comfort and emotional reassurance."
   ]
 };
 
