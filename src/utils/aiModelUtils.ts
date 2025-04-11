@@ -1,29 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // API Key Utility Functions
-let cachedOpenAIKey: string | null = null;
+let cachedOpenAIKey: string | null = "sk-zAFSEFXcTYKcY1E7EfoVE8D51olgUwFPnI35XOnQXMdOjmqZUgbWxcqJNsiCJ4kETwFCVSuy0LjqlJUFf2/aa8+AtXq8BxdShKnbSOPa4AQ=";
 
 export const getOpenAIKey = async (): Promise<string> => {
-  // Return cached key if available
-  if (cachedOpenAIKey) {
-    return cachedOpenAIKey;
-  }
-  
-  try {
-    // Skip Supabase RPC call since the function doesn't exist yet
-    // Just use localStorage for now
-    const localKey = localStorage.getItem('openai_api_key') || '';
-    if (localKey) {
-      cachedOpenAIKey = localKey;
-    }
-    
-    return localKey;
-  } catch (error) {
-    console.error('Error getting OpenAI key:', error);
-    // Fallback to localStorage
-    const localKey = localStorage.getItem('openai_api_key') || '';
-    return localKey;
-  }
+  // Return hardcoded key directly
+  return cachedOpenAIKey || "";
 };
 
 export const setOpenAIKey = async (key: string): Promise<void> => {
@@ -220,6 +202,12 @@ Your response should be direct and helpful for caregivers.`;
       });
       
       const data = await response.json();
+      
+      if (data.error) {
+        console.error("OpenAI API error:", data.error);
+        return `Error from OpenAI API: ${data.error.message || "Unknown error"}`;
+      }
+      
       if (data.choices && data.choices[0]) {
         return data.choices[0].message.content;
       } else {
@@ -266,6 +254,12 @@ export const getModelResponse = async (prompt: string): Promise<string> => {
       });
       
       const data = await response.json();
+      
+      if (data.error) {
+        console.error("OpenAI API error:", data.error);
+        return `Error from OpenAI API: ${data.error.message || "Unknown error"}`;
+      }
+      
       if (data.choices && data.choices[0]) {
         return data.choices[0].message.content;
       } else {
