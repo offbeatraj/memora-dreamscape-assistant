@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // API Key Utility Functions
@@ -13,7 +12,7 @@ export const getOpenAIKey = async (): Promise<string> => {
   try {
     // Try to get from Supabase
     const { data, error } = await supabase
-      .rpc('get_api_key', { key_type_param: 'openai' } as { key_type_param: string });
+      .rpc('get_api_key', { key_type_param: 'openai' } as any);
     
     if (error) throw error;
     
