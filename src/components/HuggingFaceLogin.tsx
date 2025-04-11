@@ -27,16 +27,28 @@ export default function HuggingFaceLogin({ onLoginSuccess }: HuggingFaceLoginPro
     setModelAccessStatus("checking");
 
     try {
-      // With the default API key, we always have access
-      setAuthStatus("success");
-      setModelAccessStatus("granted");
-      toast({
-        title: "Authentication Successful",
-        description: "OpenAI access is available"
-      });
+      // Check if we have OpenAI access
+      const hasAccess = await hasOpenAIAccess();
       
-      if (onLoginSuccess) {
-        onLoginSuccess();
+      if (hasAccess) {
+        setAuthStatus("success");
+        setModelAccessStatus("granted");
+        toast({
+          title: "Authentication Successful",
+          description: "OpenAI access is available"
+        });
+        
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        }
+      } else {
+        setAuthStatus("error");
+        setModelAccessStatus("denied");
+        toast({
+          title: "Authentication Error",
+          description: "No API key found",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Authentication error:", error);

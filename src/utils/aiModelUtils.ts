@@ -1,20 +1,91 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // API Key Utility Functions
-export const getOpenAIKey = (): string => {
-  return localStorage.getItem('openai_api_key') || '';
-};
+let cachedOpenAIKey: string | null = null;
 
-export const setOpenAIKey = (key: string): void => {
-  if (key) {
-    localStorage.setItem('openai_api_key', key);
-  } else {
-    localStorage.removeItem('openai_api_key');
+export const getOpenAIKey = async (): Promise<string> => {
+  // Return cached key if available
+  if (cachedOpenAIKey) {
+    return cachedOpenAIKey;
+  }
+  
+  try {
+    // Try to get from Supabase
+    const { data, error } = await supabase
+      .from('api_keys')
+      .select('key_value')
+      .eq('key_type', 'openai')
+      .eq('is_active', true)
+      .single();
+    
+    if (error) throw error;
+    
+    if (data && data.key_value) {
+      cachedOpenAIKey = data.key_value;
+      return data.key_value;
+    }
+    
+    // Fallback to localStorage if not in Supabase
+    const localKey = localStorage.getItem('openai_api_key') || '';
+    if (localKey) {
+      // If we found a key in localStorage, store it in Supabase for future use
+      await supabase
+        .from('api_keys')
+        .upsert({ key_type: 'openai', key_value: localKey })
+        .select();
+      
+      cachedOpenAIKey = localKey;
+    }
+    
+    return localKey;
+  } catch (error) {
+    console.error('Error getting OpenAI key from database:', error);
+    // Fallback to localStorage
+    const localKey = localStorage.getItem('openai_api_key') || '';
+    return localKey;
   }
 };
 
-export const hasOpenAIAccess = (): boolean => {
-  const key = getOpenAIKey();
+export const setOpenAIKey = async (key: string): Promise<void> => {
+  try {
+    if (key) {
+      // Store in Supabase
+      await supabase
+        .from('api_keys')
+        .upsert({ key_type: 'openai', key_value: key })
+        .select();
+      
+      // Update cache
+      cachedOpenAIKey = key;
+      
+      // Keep in localStorage as fallback
+      localStorage.setItem('openai_api_key', key);
+    } else {
+      // Remove from Supabase
+      await supabase
+        .from('api_keys')
+        .update({ is_active: false })
+        .eq('key_type', 'openai');
+      
+      // Clear cache
+      cachedOpenAIKey = null;
+      
+      // Remove from localStorage
+      localStorage.removeItem('openai_api_key');
+    }
+  } catch (error) {
+    console.error('Error setting OpenAI key in database:', error);
+    // Fallback to just localStorage
+    if (key) {
+      localStorage.setItem('openai_api_key', key);
+    } else {
+      localStorage.removeItem('openai_api_key');
+    }
+  }
+};
+
+export const hasOpenAIAccess = async (): Promise<boolean> => {
+  const key = await getOpenAIKey();
   return !!key;
 };
 
@@ -136,7 +207,9 @@ export const storePatientConversation = (patientId: string, conversation: any) =
 
 export const getPatientModelResponse = async (prompt: string, context?: string): Promise<string> => {
   // Check if we have OpenAI API access
-  if (hasOpenAIAccess()) {
+  const apiKey = await getOpenAIKey();
+  
+  if (apiKey) {
     try {
       // Enhanced prompt for care strategies
       const enhancedPrompt = `
@@ -154,8 +227,6 @@ If the question relates to a case scenario involving a patient with confusion, a
 
 Provide a compassionate, practical response that respects the dignity of the person with dementia.
 Your response should be direct and helpful for caregivers.`;
-
-      const apiKey = getOpenAIKey();
       
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -199,10 +270,10 @@ Your response should be direct and helpful for caregivers.`;
 // Function to get a simulated response
 export const getModelResponse = async (prompt: string): Promise<string> => {
   // Check if we have OpenAI API access
-  if (hasOpenAIAccess()) {
+  const apiKey = await getOpenAIKey();
+  
+  if (apiKey) {
     try {
-      const apiKey = getOpenAIKey();
-      
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {

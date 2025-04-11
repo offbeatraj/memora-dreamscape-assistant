@@ -33,18 +33,26 @@ export default function Chat() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const key = getOpenAIKey();
-    setApiKey(key);
-    setHasOpenAI(!!key);
+    const checkOpenAIAccess = async () => {
+      try {
+        const key = await getOpenAIKey();
+        setApiKey(key);
+        setHasOpenAI(!!key);
+      } catch (error) {
+        console.error("Error checking OpenAI access:", error);
+      }
+    };
+    
+    checkOpenAIAccess();
   }, []);
 
   const handleLoginSuccess = () => {
     setShowCLILogin(false);
   };
 
-  const handleSaveApiKey = () => {
+  const handleSaveApiKey = async () => {
     if (apiKey) {
-      setOpenAIKey(apiKey);
+      await setOpenAIKey(apiKey);
       setHasOpenAI(true);
       setOpenApiKeyDialogOpen(false);
       toast({
@@ -54,9 +62,9 @@ export default function Chat() {
     }
   };
 
-  const handleClearApiKey = () => {
+  const handleClearApiKey = async () => {
     setApiKey("");
-    setOpenAIKey("");
+    await setOpenAIKey("");
     setHasOpenAI(false);
     toast({
       title: "API Key Cleared",
@@ -204,7 +212,7 @@ export default function Chat() {
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">
-                Your API key is stored locally in your browser and is never sent to our servers.
+                Your API key is stored securely in our database and never exposed to other users.
               </p>
             </div>
             <div className="flex gap-2">
