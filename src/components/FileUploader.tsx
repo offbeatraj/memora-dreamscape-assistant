@@ -1,13 +1,14 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, X, FileText, Loader2, Check, FileImage, File as FileIcon, Edit3 } from "lucide-react";
+import { Upload, X, FileText, Loader2, Check, FileImage, File as FileIcon, Edit3, UserPlus, UserCheck } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase, uploadPatientFile } from "@/integrations/supabase/client";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function FileUploader() {
@@ -20,9 +21,11 @@ export default function FileUploader() {
   const [caseText, setCaseText] = useState("");
   const [caseTitle, setCaseTitle] = useState("");
   const [uploadMode, setUploadMode] = useState<"file" | "text">("file");
+  const [showPatientOptions, setShowPatientOptions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (id) {
@@ -44,12 +47,17 @@ export default function FileUploader() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!patientId) {
+    if (!patientId && fileType !== "case") {
       toast({
         title: "Patient not found",
         description: "Please ensure you're viewing a patient's profile before uploading files.",
         variant: "destructive",
       });
+      return;
+    }
+
+    if (fileType === "case" && !patientId) {
+      setShowPatientOptions(true);
       return;
     }
 
@@ -136,6 +144,7 @@ export default function FileUploader() {
         setCaseText("");
         setCaseTitle("");
         setUploadSuccess(false);
+        setShowPatientOptions(false);
       }, 3000);
     } catch (error) {
       console.error("Upload error:", error);
@@ -147,6 +156,29 @@ export default function FileUploader() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleCreateNewPatient = () => {
+    navigate('/patients/new', { 
+      state: { 
+        fromCaseStudy: true,
+        caseTitle: caseTitle || "Case Study",
+        caseContent: uploadMode === "text" ? caseText : notes
+      } 
+    });
+  };
+
+  const handleAddToExistingPatient = () => {
+    navigate('/patients', { 
+      state: { 
+        selectForCaseStudy: true,
+        caseFiles: files,
+        caseNotes: notes,
+        caseTitle: caseTitle,
+        caseText: caseText,
+        uploadMode
+      } 
+    });
   };
 
   const getFileIcon = (file: File) => {
@@ -335,29 +367,63 @@ export default function FileUploader() {
             </div>
           )}
 
-          <Button
-            type="submit"
-            className="w-full bg-memora-purple hover:bg-memora-purple-dark transition-all duration-300"
-            disabled={uploading || uploadSuccess}
-          >
-            {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {uploadSuccess && <Check className="mr-2 h-4 w-4" />}
-            {uploading
-              ? "Processing..."
-              : uploadSuccess
-              ? "Successfully Processed"
-              : uploadMode === "text" && fileType === "case" 
-                ? "Save Case Study" 
-                : `Upload ${
-                    fileType === "medical" 
-                      ? "Medical Records" 
-                      : fileType === "personal" 
-                      ? "Personal Memories" 
-                      : fileType === "case"
-                      ? "Patient Case Files"
-                      : "Documents"
-                  }`}
-          </Button>
+          {showPatientOptions && fileType === "case" ? (
+            <div className="space-y-4 mb-4">
+              <div className="bg-memora-purple/10 p-4 rounded-md text-center">
+                <h3 className="font-medium mb-2">What would you like to do with this case study?</h3>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <Button 
+                    type="button"
+                    className="bg-emerald-600 hover:bg-emerald-700 transition-colors"
+                    onClick={handleCreateNewPatient}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Create New Patient
+                  </Button>
+                  <Button
+                    type="button"
+                    className="bg-blue-600 hover:bg-blue-700 transition-colors"
+                    onClick={handleAddToExistingPatient}
+                  >
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    Add to Existing Patient
+                  </Button>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="mt-3 text-sm"
+                  onClick={() => setShowPatientOptions(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              type="submit"
+              className="w-full bg-memora-purple hover:bg-memora-purple-dark transition-all duration-300"
+              disabled={uploading || uploadSuccess}
+            >
+              {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {uploadSuccess && <Check className="mr-2 h-4 w-4" />}
+              {uploading
+                ? "Processing..."
+                : uploadSuccess
+                ? "Successfully Processed"
+                : uploadMode === "text" && fileType === "case" 
+                  ? "Save Case Study" 
+                  : `Upload ${
+                      fileType === "medical" 
+                        ? "Medical Records" 
+                        : fileType === "personal" 
+                        ? "Personal Memories" 
+                        : fileType === "case"
+                        ? "Patient Case Files"
+                        : "Documents"
+                    }`}
+            </Button>
+          )}
         </form>
       </CardContent>
     </Card>
