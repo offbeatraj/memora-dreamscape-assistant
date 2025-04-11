@@ -1,5 +1,55 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getOpenAIKey, hasOpenAIAccess } from "./apiKeyUtils";
+
+// API Key Utility Functions
+export const getOpenAIKey = (): string => {
+  return localStorage.getItem('openai_api_key') || '';
+};
+
+export const setOpenAIKey = (key: string): void => {
+  if (key) {
+    localStorage.setItem('openai_api_key', key);
+  } else {
+    localStorage.removeItem('openai_api_key');
+  }
+};
+
+export const hasOpenAIAccess = (): boolean => {
+  const key = getOpenAIKey();
+  return !!key;
+};
+
+// Conversation Utilities
+export const getPatientConversations = (patientId: string): any[] => {
+  try {
+    const key = `patient_${patientId}_conversations`;
+    const storedConversations = localStorage.getItem(key);
+    return storedConversations ? JSON.parse(storedConversations) : [];
+  } catch (error) {
+    console.error("Error getting patient conversations:", error);
+    return [];
+  }
+};
+
+export const formatConversationTimestamp = (timestamp: string): string => {
+  try {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return `Today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } else if (diffDays === 1) {
+      return `Yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  } catch (error) {
+    console.error("Error formatting timestamp:", error);
+    return timestamp || "Unknown date";
+  }
+};
 
 // Function to store patient data
 export const storePatientData = (patientId: string, patientData: any) => {
