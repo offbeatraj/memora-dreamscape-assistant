@@ -10,18 +10,8 @@ export const getOpenAIKey = async (): Promise<string> => {
   }
   
   try {
-    // Try to get from Supabase
-    const { data, error } = await supabase
-      .rpc('get_api_key', { key_type_param: 'openai' }, { count: 'exact' });
-    
-    if (error) throw error;
-    
-    if (data) {
-      cachedOpenAIKey = data as string;
-      return data as string;
-    }
-    
-    // Fallback to localStorage if not in Supabase
+    // Skip Supabase RPC call since the function doesn't exist yet
+    // Just use localStorage for now
     const localKey = localStorage.getItem('openai_api_key') || '';
     if (localKey) {
       cachedOpenAIKey = localKey;
@@ -29,7 +19,7 @@ export const getOpenAIKey = async (): Promise<string> => {
     
     return localKey;
   } catch (error) {
-    console.error('Error getting OpenAI key from database:', error);
+    console.error('Error getting OpenAI key:', error);
     // Fallback to localStorage
     const localKey = localStorage.getItem('openai_api_key') || '';
     return localKey;
