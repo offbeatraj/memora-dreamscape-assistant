@@ -38,9 +38,9 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the type error by explicitly casting the parameter object with a type annotation
+      // Fix the type error by providing both type arguments - the return type and the parameters type
       const { data, error } = await supabase
-        .rpc<any[]>('get_recent_files', { 
+        .rpc<any[], { limit_count: number }>('get_recent_files', { 
           limit_count: 5
         });
       
