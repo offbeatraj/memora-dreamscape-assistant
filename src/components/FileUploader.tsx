@@ -81,9 +81,12 @@ export default function FileUploader() {
         }
         
         // Create a text file from the case text input
-        const caseTitle = caseTitle || "Case Scenario";
-        const fileName = `${caseTitle.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
-        const file = new File([caseText], fileName, { type: "text/plain" });
+        const titleToUse = caseTitle || "Case Scenario";
+        const fileName = `${titleToUse.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+        
+        // Create file using the proper Blob constructor
+        const blob = new Blob([caseText], { type: "text/plain" });
+        const file = new File([blob], fileName, { type: "text/plain" });
         
         // Upload the text file
         const fileUrl = await uploadPatientFile(
