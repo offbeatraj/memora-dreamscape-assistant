@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // API Key Utility Functions
@@ -12,13 +13,13 @@ export const getOpenAIKey = async (): Promise<string> => {
   try {
     // Try to get from Supabase
     const { data, error } = await supabase
-      .rpc<Record<string, never>, string>('get_api_key', { key_type_param: 'openai' });
+      .rpc('get_api_key', { key_type_param: 'openai' });
     
     if (error) throw error;
     
     if (data) {
-      cachedOpenAIKey = data;
-      return data;
+      cachedOpenAIKey = data as string;
+      return data as string;
     }
     
     // Fallback to localStorage if not in Supabase
