@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, X, FileText, Loader2, Check, FileImage, File, Edit3 } from "lucide-react";
+import { Upload, X, FileText, Loader2, Check, FileImage, File as FileIcon, Edit3 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase, uploadPatientFile } from "@/integrations/supabase/client";
 import { useParams } from "react-router-dom";
@@ -153,7 +153,7 @@ export default function FileUploader() {
     const extension = file.name.split('.').pop()?.toLowerCase();
     
     if (extension === 'pdf') {
-      return <File className="h-5 w-5 text-memora-purple" />;
+      return <FileIcon className="h-5 w-5 text-memora-purple" />;
     } else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension || '')) {
       return <FileImage className="h-5 w-5 text-memora-purple" />;
     } else {
