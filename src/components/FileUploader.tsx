@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,13 +13,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function FileUploader() {
   const [files, setFiles] = useState<File[]>([]);
   const [notes, setNotes] = useState("");
-  const [fileType, setFileType] = useState<"medical" | "personal" | "other" | "case">("medical");
+  const [fileType, setFileType<"medical" | "personal" | "other" | "case">("medical");
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [patientId, setPatientId] = useState<string | null>(null);
   const [caseText, setCaseText] = useState("");
   const [caseTitle, setCaseTitle] = useState("");
-  const [uploadMode, setUploadMode] = useState<"file" | "text">("file");
+  const [uploadMode, setUploadMode<"file" | "text">("file");
   const [showPatientOptions, setShowPatientOptions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -159,7 +158,7 @@ export default function FileUploader() {
   };
 
   const handleCreateNewPatient = () => {
-    navigate('/patients/new', { 
+    navigate('/patient/new', { 
       state: { 
         fromCaseStudy: true,
         caseTitle: caseTitle || "Case Study",

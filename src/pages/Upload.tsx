@@ -1,4 +1,3 @@
-
 import Layout from "@/components/Layout";
 import FileUploader from "@/components/FileUploader";
 import MockCaseFile from "@/components/MockCaseFile";
@@ -38,13 +37,9 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Use RPC function to get the data with proper type casting
-      const rpc = supabase.rpc as unknown as (
-        fn: string, 
-        params: Record<string, any>
-      ) => Promise<{ data: any; error: any }>;
-      
-      const { data, error } = await rpc('get_recent_files', { limit_count: 5 });
+      // Fix the RPC call by using the proper syntax
+      const { data, error } = await supabase
+        .rpc('get_recent_files', { limit_count: 5 });
       
       if (error) throw error;
       
@@ -185,7 +180,7 @@ export default function UploadPage() {
             <h2 className="text-lg font-medium mb-4">How uploaded data is used</h2>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
-                <span className="bg-memora-purple text-white rounded-full h-5 w-5 flex items-center justify-center text-xs mt-0.5">✓</span>
+                <span className="bg-memora-purple text-white rounded-full h-5 w-5 flex items-center justify-center text-xs mt-0.5">���</span>
                 <span>Your uploads are used to personalize responses and provide more relevant assistance.</span>
               </li>
               <li className="flex items-start gap-2">
