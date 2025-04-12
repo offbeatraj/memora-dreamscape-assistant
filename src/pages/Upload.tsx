@@ -31,6 +31,11 @@ interface RecentFile {
   patient_name: string;
 }
 
+// Define input parameters type for the rpc function
+interface GetRecentFilesParams {
+  limit_count: number;
+}
+
 export default function UploadPage() {
   const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,9 +56,9 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the type error by properly typing both the parameters and the response
+      // Fix the type error by providing both type arguments: response type and parameters type
       const { data, error } = await supabase
-        .rpc<RecentFile[]>('get_recent_files', { 
+        .rpc<RecentFile[], GetRecentFilesParams>('get_recent_files', { 
           limit_count: 5 
         });
       
