@@ -1,3 +1,4 @@
+
 import Layout from "@/components/Layout";
 import FileUploader from "@/components/FileUploader";
 import MockCaseFile from "@/components/MockCaseFile";
@@ -29,6 +30,11 @@ interface RecentFile {
   patient_name: string;
 }
 
+// Define the type for the RPC function parameters
+type GetRecentFilesParams = {
+  limit_count: number;
+}
+
 export default function UploadPage() {
   const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,14 +54,15 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
+      // Fix the typing issue by explicitly typing the parameters
       const { data, error } = await supabase
-        .rpc('get_recent_files', { 
+        .rpc<RecentFile[]>('get_recent_files', { 
           limit_count: 5 
-        } as any);
+        } as GetRecentFilesParams);
       
       if (error) throw error;
       
-      setRecentFiles((data as unknown as RecentFile[]) || []);
+      setRecentFiles(data || []);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
