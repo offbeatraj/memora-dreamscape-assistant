@@ -56,16 +56,16 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the typing by specifying the function name as a string literal type
+      // Fix the typing by removing generic parameters and handling the casting properly
       const { data, error } = await supabase
-        .rpc<{}, GetRecentFilesParams>("get_recent_files", { 
+        .rpc("get_recent_files", { 
           limit_count: 5 
         });
       
       if (error) throw error;
       
       // Explicitly cast the result to RecentFile[] to fix typing issues
-      setRecentFiles((data as unknown as RecentFile[]) || []);
+      setRecentFiles(data as RecentFile[] || []);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
