@@ -56,16 +56,16 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the typing by using the correct generic parameter order for rpc
+      // Type the RPC function correctly with appropriate types
       const { data, error } = await supabase
-        .rpc('get_recent_files', { 
+        .rpc<RecentFile[]>('get_recent_files', { 
           limit_count: 5 
-        });
+        } as GetRecentFilesParams);
       
       if (error) throw error;
       
-      // Cast the data to the expected type
-      setRecentFiles((data || []) as RecentFile[]);
+      // Use a type assertion to ensure TypeScript knows this is a RecentFile[]
+      setRecentFiles(data || [] as RecentFile[]);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
