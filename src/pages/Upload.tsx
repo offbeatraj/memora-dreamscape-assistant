@@ -1,4 +1,3 @@
-
 import Layout from "@/components/Layout";
 import FileUploader from "@/components/FileUploader";
 import MockCaseFile from "@/components/MockCaseFile";
@@ -19,7 +18,6 @@ import { FileText, Download, Trash } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
 
-// Define an interface for the recent files
 interface RecentFile {
   id: string;
   file_name: string;
@@ -29,11 +27,6 @@ interface RecentFile {
   file_category: string;
   upload_date: string;
   patient_name: string;
-}
-
-// Define input parameters type for the rpc function
-interface GetRecentFilesParams {
-  limit_count: number;
 }
 
 export default function UploadPage() {
@@ -46,7 +39,6 @@ export default function UploadPage() {
   useEffect(() => {
     fetchRecentFiles();
     
-    // Set patient ID from route params if available
     if (id) {
       setSelectedPatientId(id);
     }
@@ -56,16 +48,14 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the typing by removing generic parameters and handling the casting properly
       const { data, error } = await supabase
-        .rpc("get_recent_files", { 
+        .rpc('get_recent_files', { 
           limit_count: 5 
-        });
+        } as any);
       
       if (error) throw error;
       
-      // Explicitly cast the result to RecentFile[] to fix typing issues
-      setRecentFiles(data as RecentFile[] || []);
+      setRecentFiles((data as unknown as RecentFile[]) || []);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
@@ -80,7 +70,6 @@ export default function UploadPage() {
 
   const handleDownload = async (filePath: string, fileName: string) => {
     try {
-      // Extract just the file path portion from the URL if it's a full URL
       const path = filePath.includes('patient-files/') 
         ? filePath.split('patient-files/')[1] 
         : filePath;
@@ -91,7 +80,6 @@ export default function UploadPage() {
       
       if (error) throw error;
       
-      // Create a download link
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
