@@ -8,6 +8,7 @@ import { getPatientModelResponse, storePatientData, getPatientCaseFiles } from "
 import { useToast } from "@/components/ui/use-toast";
 import PatientQuestionGenerator from "./PatientQuestionGenerator";
 import { savePatientConversation } from "@/integrations/supabase/client";
+import OptimizedChatSuggestions from "./OptimizedChatSuggestions";
 
 export interface PatientDataEvent {
   patient: {
@@ -27,6 +28,7 @@ export default function PatientAIAssistant() {
   const [patientData, setPatientData] = useState<PatientDataEvent | null>(null);
   const [conversationHistory, setConversationHistory] = useState<string[]>([]);
   const [caseFiles, setCaseFiles] = useState<string>("");
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Memoize the fetchPatientCaseFiles function
@@ -52,6 +54,15 @@ export default function PatientAIAssistant() {
       setResponse(initialGreeting);
       
       setConversationHistory([`AI: ${initialGreeting}`]);
+      
+      // Generate some initial suggested questions based on patient data
+      const initialQuestions = [
+        `What are the best activities for ${event.detail.patient.name} at the ${event.detail.patient.stage} stage?`,
+        `What symptoms might ${event.detail.patient.name} experience?`,
+        `How can I help ${event.detail.patient.name} with daily activities?`,
+        `What medications might help ${event.detail.patient.name}?`,
+      ];
+      setSuggestedQuestions(initialQuestions);
       
       await fetchPatientCaseFiles(event.detail.patient.id);
     }
@@ -87,7 +98,7 @@ export default function PatientAIAssistant() {
     };
   }, [handlePatientDataLoaded, handleFileUploaded]);
 
-  // Memoize the patient context
+  // Memoize the patient context to prevent unnecessary recalculations
   const patientContext = useMemo(() => {
     if (!patientData?.patient) return "";
     
@@ -111,14 +122,34 @@ export default function PatientAIAssistant() {
     
     setIsLoading(true);
     try {
-      const aiResponse = await getPatientModelResponse(input, patientContext);
+      // Pass the full conversation history for better context awareness
+      const aiResponse = await getPatientModelResponse(
+        input, 
+        patientContext,
+        conversationHistory
+      );
       setResponse(aiResponse);
       
       if (patientData?.patient?.id) {
-        savePatientConversation(patientData.patient.id, `Q: ${input}\nA: ${aiResponse}`, "AI Caregiver Assistant");
+        // Save the conversation asynchronously
+        Promise.resolve().then(() => {
+          savePatientConversation(patientData.patient.id, `Q: ${input}\nA: ${aiResponse}`, "AI Caregiver Assistant")
+            .catch(err => console.error("Error saving conversation:", err));
+        });
       }
       
       setConversationHistory(prev => [...prev, `AI: ${aiResponse}`]);
+      
+      // Generate new suggested questions based on the current conversation
+      if (patientData?.patient) {
+        const newQuestions = [
+          `How can I help with ${input.toLowerCase().includes('memory') ? 'other cognitive challenges' : 'memory issues'}?`,
+          `What resources are available for ${patientData.patient.name}'s condition?`,
+          `What should I expect next with ${patientData.patient.name}'s care?`,
+          `How do I handle ${input.toLowerCase().includes('stress') ? 'anxiety' : 'stress'} as a caregiver?`,
+        ];
+        setSuggestedQuestions(newQuestions);
+      }
     } catch (error) {
       console.error("Error getting response:", error);
       toast({
@@ -179,6 +210,15 @@ export default function PatientAIAssistant() {
                         )}
                       </Button>
                     </form>
+
+                    {/* Use the optimized component for suggested questions */}
+                    {suggestedQuestions.length > 0 && (
+                      <OptimizedChatSuggestions
+                        questions={suggestedQuestions}
+                        onSelectQuestion={handleSelectQuestion}
+                        isPatientMode={true}
+                      />
+                    )}
 
                     {caseFiles && (
                       <div className="mt-3 px-3 py-2 bg-blue-50 border-l-4 border-blue-300 rounded text-sm">

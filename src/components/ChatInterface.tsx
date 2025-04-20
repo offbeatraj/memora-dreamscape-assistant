@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getModelResponse } from "@/utils/aiModelUtils";
 import { PatientDataEvent } from "@/components/PatientAIAssistant";
 import QuestionGenerator from "@/components/QuestionGenerator";
+import OptimizedChatSuggestions from "./OptimizedChatSuggestions";
 
 type MessageType = "text" | "image" | "reminder" | "health" | "question";
 
@@ -73,13 +74,15 @@ export default function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   useEffect(() => {
     const handlePatientDataLoaded = (event: CustomEvent<PatientDataEvent>) => {
@@ -114,7 +117,7 @@ export default function ChatInterface() {
     };
   }, []);
 
-  const generatePatientSpecificQuestions = (patient: any, caseStudy: string) => {
+  const generatePatientSpecificQuestions = useCallback((patient: any, caseStudy: string) => {
     const baseQuestions = [
       `What medications is ${patient.name} currently taking?`,
       `What are the best activities for ${patient.name} at their current stage?`,
@@ -135,9 +138,15 @@ export default function ChatInterface() {
     }
 
     setGeneratedPatientQuestions(baseQuestions);
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const conversationHistory = useMemo(() => {
+    return messages
+      .slice(-6)
+      .map(msg => `${msg.role}: ${msg.content}`);
+  }, [messages]);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!input.trim() && attachmentType === "none") return;
@@ -183,11 +192,6 @@ export default function ChatInterface() {
       let prompt = content;
       let contextPrompt = "";
       
-      const recentMessages = messages
-        .slice(-6)
-        .map(msg => `${msg.role}: ${msg.content}`)
-        .join("\n");
-      
       if (patientContext) {
         const { patient, caseStudy } = patientContext;
         contextPrompt = `Context: This is about patient ${patient.name} who has ${patient.diagnosis} in ${patient.stage} stage. 
@@ -195,12 +199,12 @@ export default function ChatInterface() {
         Case Study Details: ${caseStudy}
         
         Recent conversation:
-        ${recentMessages}
+        ${conversationHistory.join("\n")}
         
         Question: ${content}`;
       } else {
         contextPrompt = `Recent conversation:
-        ${recentMessages}
+        ${conversationHistory.join("\n")}
         
         User question: ${content}`;
       }
@@ -213,7 +217,11 @@ export default function ChatInterface() {
         prompt = contextPrompt;
       }
       
-      const response = await getModelResponse(prompt);
+      const response = await getModelResponse(
+        prompt,
+        patientContext ? JSON.stringify(patientContext) : null,
+        conversationHistory
+      );
       
       let responseType: MessageType = "text";
       let responseMetadata = {};
@@ -271,13 +279,13 @@ export default function ChatInterface() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [input, attachmentType, patientContext, conversationHistory, toast]);
 
-  const handleSampleQuestion = (question: string) => {
+  const handleSampleQuestion = useCallback((question: string) => {
     setInput(question);
-  };
+  }, []);
 
-  const markAsImportant = (messageId: string) => {
+  const markAsImportant = useCallback((messageId: string) => {
     setMessages(prev => 
       prev.map(message => 
         message.id === messageId 
@@ -290,9 +298,9 @@ export default function ChatInterface() {
       title: "Message marked as important",
       description: "This message will be saved for future reference.",
     });
-  };
+  }, [toast]);
 
-  const clearPatientContext = () => {
+  const clearPatientContext = useCallback(() => {
     setPatientContext(null);
     
     const systemMessage: Message = {
@@ -309,9 +317,9 @@ export default function ChatInterface() {
       title: "Patient Data Cleared",
       description: "You have returned to general conversation mode.",
     });
-  };
+  }, [toast]);
 
-  const renderMessage = (message: Message) => {
+  const renderMessage = useCallback((message: Message) => {
     return (
       <div
         key={message.id}
@@ -387,9 +395,9 @@ export default function ChatInterface() {
         </div>
       </div>
     );
-  };
+  }, [markAsImportant]);
 
-  const getInsights = () => {
+  const getInsights = useCallback(() => {
     return [
       {
         title: "Memory Status",
@@ -421,7 +429,7 @@ export default function ChatInterface() {
         }
       }
     ];
-  };
+  }, []);
 
   return (
     <div className="flex flex-col h-[70vh] md:h-[80vh]">
@@ -491,44 +499,18 @@ export default function ChatInterface() {
           </Card>
           
           {!patientContext && (
-            <div className="mb-4 flex flex-wrap gap-2">
-              {sampleQuestions.map((question, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSampleQuestion(question)}
-                  className="text-xs bg-white/80 hover:bg-white transition-all duration-300 hover:shadow-sm"
-                >
-                  {question}
-                </Button>
-              ))}
-            </div>
+            <OptimizedChatSuggestions
+              questions={sampleQuestions}
+              onSelectQuestion={handleSampleQuestion}
+            />
           )}
           
           {patientContext && (
-            <div className="mb-4 flex flex-wrap gap-2">
-              {generatedPatientQuestions.slice(0, 4).map((question, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSampleQuestion(question)}
-                  className="text-xs bg-white/80 hover:bg-white"
-                >
-                  {question.length > 40 ? question.substring(0, 37) + "..." : question}
-                </Button>
-              ))}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setActiveTab("questions")}
-                className="text-xs bg-white/80 hover:bg-white"
-              >
-                <ChevronDown className="h-3 w-3 mr-1" />
-                More questions
-              </Button>
-            </div>
+            <OptimizedChatSuggestions
+              questions={generatedPatientQuestions.slice(0, 4)}
+              onSelectQuestion={handleSampleQuestion}
+              isPatientMode={true}
+            />
           )}
           
           <form onSubmit={handleSubmit} className="flex gap-2">

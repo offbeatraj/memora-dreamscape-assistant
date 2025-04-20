@@ -1,4 +1,3 @@
-
 import Layout from "@/components/Layout";
 import FileUploader from "@/components/FileUploader";
 import MockCaseFile from "@/components/MockCaseFile";
@@ -47,17 +46,15 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the typing issue by not specifying generic types manually
-      // Let TypeScript infer them from the return type annotation on the function
-      const { data, error } = await supabase
-        .rpc('get_recent_files', { 
-          limit_count: 5 
-        });
+      // Fix the typing issue by explicitly typing the function call
+      const { data, error } = await supabase.rpc<RecentFile[], GetRecentFilesParams>(
+        'get_recent_files', 
+        { limit_count: 5 }
+      );
       
       if (error) throw error;
       
-      // Cast the data to RecentFile[] since we know the structure
-      setRecentFiles(data as RecentFile[] || []);
+      setRecentFiles(data || []);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
@@ -70,6 +67,7 @@ export default function UploadPage() {
     }
   }, [toast]);
 
+  // Optimize effect with proper dependencies
   useEffect(() => {
     fetchRecentFiles();
     
