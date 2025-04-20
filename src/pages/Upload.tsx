@@ -47,16 +47,17 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the typing issue with a correct approach
+      // Fix the typing issue by not specifying generic types manually
+      // Let TypeScript infer them from the return type annotation on the function
       const { data, error } = await supabase
         .rpc('get_recent_files', { 
           limit_count: 5 
-        })
-        .returns<RecentFile[]>();
+        });
       
       if (error) throw error;
       
-      setRecentFiles(data || []);
+      // Cast the data to RecentFile[] since we know the structure
+      setRecentFiles(data as RecentFile[] || []);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
