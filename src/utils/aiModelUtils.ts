@@ -84,7 +84,6 @@ export const storePatientData = (patientId: string, patientData: any) => {
   }
 };
 
-// Function to get patient data
 export const getPatientData = (patientId: string) => {
   try {
     const key = `patient_${patientId}_data`;
@@ -96,7 +95,6 @@ export const getPatientData = (patientId: string) => {
   }
 };
 
-// Function to get patient case files
 export const getPatientCaseFiles = async (patientId: string) => {
   try {
     // First try to get from Supabase if available
@@ -179,6 +177,10 @@ const identifyCaregiverQuestionType = (prompt: string): string => {
       return "eating_strategy";
     } else if (lowerPrompt.includes("bath") || lowerPrompt.includes("shower") || lowerPrompt.includes("hygiene")) {
       return "bathing_strategy";
+    } else if (lowerPrompt.includes("memor") || lowerPrompt.includes("forget")) {
+      return "memory_strategy";
+    } else if (lowerPrompt.includes("medic") || lowerPrompt.includes("pill") || lowerPrompt.includes("drug")) {
+      return "medication_strategy";
     }
     
     // General strategy question
@@ -190,7 +192,14 @@ const identifyCaregiverQuestionType = (prompt: string): string => {
       lowerPrompt.includes("what are") || 
       lowerPrompt.includes("explain") || 
       lowerPrompt.includes("tell me about")) {
-    return "information";
+    if (lowerPrompt.includes("alzheimer") || lowerPrompt.includes("dementia")) {
+      return "condition_information";
+    } else if (lowerPrompt.includes("medic") || lowerPrompt.includes("drug") || lowerPrompt.includes("treatment")) {
+      return "treatment_information";
+    } else if (lowerPrompt.includes("stage") || lowerPrompt.includes("progress")) {
+      return "progression_information";
+    }
+    return "general_information";
   }
   
   // Emotional support questions
@@ -233,8 +242,25 @@ When responding to this caregiver question about ${questionType.replace('_strate
 - One approach should demonstrate validation and redirection techniques
 - Compare this with direct reality orientation approaches (usually less effective)
 - Explain why person-centered approaches that preserve dignity are typically more successful
+- If available in the patient context, reference specific details about the patient to personalize the advice
 
 Format your response to clearly label and compare these different approaches.`;
+      } else if (questionType === "condition_information") {
+        systemPrompt += `
+Provide scientific, evidence-based information about Alzheimer's disease or dementia, while keeping it accessible and relevant to caregivers. Include:
+- Recent research findings when relevant
+- Accurate descriptions of symptoms and mechanisms
+- Clear distinctions between different types of dementia when applicable
+- Focus on practical implications for caregiving
+- Avoid medical jargon when possible, but explain necessary terms`;
+      } else if (questionType === "caregiver_support") {
+        systemPrompt += `
+Respond with empathy and validation to the caregiver's emotional needs. Include:
+- Acknowledgment of the challenges they're facing
+- Validation of their feelings
+- Practical self-care suggestions
+- Resources for caregiver support
+- Reminders about the importance of their own wellbeing`;
       }
       
       // Enhanced prompt for care strategies
@@ -245,7 +271,7 @@ ${context ? `\nContext about the patient:\n${context}\n` : ''}
 The caregiver is asking about: ${prompt}
 
 Provide a compassionate, practical response that respects the dignity of the person with dementia.
-Your response should be direct and helpful for caregivers.`;
+Your response should be direct, helpful, and specifically tailored to this situation for caregivers.`;
       
       const response = await fetch("https://router.requesty.ai/v1/chat/completions", {
         method: "POST",
@@ -265,7 +291,7 @@ Your response should be direct and helpful for caregivers.`;
               content: enhancedPrompt
             }
           ],
-          temperature: 0.7,
+          temperature: 0.5,
           max_tokens: 2000
         })
       });
@@ -397,6 +423,74 @@ This respects Pam's dignity while gently guiding her back to bed, minimizing con
     }
   }
   
+  // Memory issues
+  if (questionType === "memory_strategy") {
+    return `## Effective Strategies for Memory Support
+
+Memory challenges are one of the core symptoms of dementia. Here are practical approaches:
+
+### ✅ Recommended Approach: External Memory Aids & Routine
+
+**What to try:**
+- Use consistent daily routines to create predictability
+- Place simple labels on important items and doors
+- Create a "memory station" with essential daily information
+- Use a large, clear calendar showing only necessary information
+- Provide gentle reminders without testing memory ("Lunch is ready" rather than "Do you remember it's lunchtime?")
+- Create a memory book with photos and short captions of important people and events
+
+**Why this works:**
+- Reduces anxiety about forgetting
+- Provides environmental support rather than requiring internal memory
+- Preserves dignity by enabling more independence
+- Avoids putting the person on the spot
+
+### ❌ Less Effective Approach: Memory Quizzing
+
+**What to avoid:**
+- Asking "Do you remember..." questions
+- Correcting memory mistakes immediately
+- Expressing frustration at repeated questions
+- Expecting the person to remember recent conversations or instructions
+
+Remember that memory loss is not something the person can control with effort. The goal is to create an environment that supports them rather than challenging them.`;
+  }
+  
+  // Medication management
+  if (questionType === "medication_strategy") {
+    return `## Medication Management Strategies
+
+Managing medications for someone with dementia requires careful approaches:
+
+### ✅ Recommended Approaches:
+
+**1. Simplified Routines:**
+- Give medications at the same times each day
+- Link medication times to consistent daily events (breakfast, bedtime)
+- Use pill organizers with clear day/time labels
+- Consider automated pill dispensers with alarms for later stages
+
+**2. Supportive Communication:**
+- Provide simple, step-by-step instructions
+- Use a calm, reassuring tone
+- Avoid rushing or showing frustration
+- Offer a small glass of water or preferred beverage
+
+**3. Environmental Adjustments:**
+- Remove visual clutter when giving medications
+- Ensure good lighting
+- Consider easy-to-swallow forms if pill-swallowing is difficult
+- Keep backup supplies in a secure location
+
+### ❌ Less Effective Approaches:
+- Complex explanations about why medications are needed
+- Arguing or forcing if resistance occurs
+- Irregular timing or approaches
+- Hiding medication in food without prior medical approval (may be appropriate in some cases but requires healthcare provider guidance)
+
+Always consult with healthcare providers about medication challenges, as they may be able to simplify regimens or suggest alternative delivery methods.`;
+  }
+  
   // Check for specific patient questions
   if (context && (lowerPrompt.includes('alzheimer') || lowerPrompt.includes('dementia'))) {
     if (lowerPrompt.includes('medicine') || lowerPrompt.includes('medication')) {
@@ -405,25 +499,53 @@ This respects Pam's dignity while gently guiding her back to bed, minimizing con
 However, I don't have specific details about this patient's prescribed medications in the provided case information. It's important to:
 
 1. Follow the exact dosage and timing prescribed by their doctor
-2. Monitor for side effects
+2. Monitor for side effects such as:
+   - Nausea, vomiting, or diarrhea
+   - Loss of appetite
+   - Dizziness or headaches
+   - Sleep disturbances
 3. Keep a regular medication schedule
 4. Use pill organizers or reminders if needed
+5. Track effectiveness and any changes in symptoms
 
-Always consult with the patient's healthcare provider before making any changes to their medication routine.`;
+Always consult with the patient's healthcare provider before making any changes to their medication routine. Regular follow-ups are essential to assess medication effectiveness and adjust as the condition progresses.`;
     } 
     else if (lowerPrompt.includes('communication') || lowerPrompt.includes('talk')) {
-      return `When communicating with someone who has Alzheimer's disease:
+      return `### Effective Communication Strategies for Dementia Care
 
-1. Use simple, direct language
-2. Ask one question at a time
-3. Be patient and allow extra time for responses
-4. Maintain a calm, reassuring tone
-5. Minimize distractions and background noise
-6. Use gentle touch when appropriate
-7. Pay attention to non-verbal cues
-8. Avoid arguing or correcting mistakes
-9. Use visual cues along with verbal communication
-10. Focus on feelings rather than facts
+When communicating with someone who has Alzheimer's disease:
+
+**Before Starting:**
+- Reduce background distractions (turn off TV/radio)
+- Position yourself at eye level, face-to-face
+- Ensure adequate lighting but avoid glare
+- Make sure hearing aids are working if used
+
+**Essential Techniques:**
+1. **Keep it simple**
+   - Use short, direct sentences
+   - Ask one question at a time
+   - Offer simple choices (limit to two options)
+   - Break instructions into small steps
+
+2. **Non-verbal communication**
+   - Maintain gentle eye contact
+   - Use appropriate touch when welcomed
+   - Demonstrate actions you're describing
+   - Pay attention to your tone and facial expressions
+   - Notice their non-verbal cues
+
+3. **Patience and listening**
+   - Allow extra time for responses
+   - Avoid interrupting or rushing
+   - Listen for the feeling behind confused words
+   - Be comfortable with silences
+
+4. **Validation over correction**
+   - Respond to emotions rather than factual errors
+   - Avoid arguing or correcting mistakes
+   - Redirect gently rather than contradict
+   - Join their reality rather than force yours
 
 These approaches help maintain dignity and reduce frustration for both the person with Alzheimer's and their caregiver.`;
     }
@@ -432,5 +554,11 @@ These approaches help maintain dignity and reduce frustration for both the perso
   // Default response for other questions
   return `I'm here to help with questions about Alzheimer's disease and caregiving strategies. Based on evidence-based approaches, I can provide guidance on managing symptoms, communication techniques, daily care routines, and emotional support for both patients and caregivers. 
 
-If you're looking for specific advice about a patient case or scenario, please provide more details about the situation, and I'd be happy to suggest appropriate care strategies.`;
+If you're looking for specific advice about a patient case or scenario, please provide more details about the situation, and I'd be happy to suggest appropriate care strategies.
+
+For the most effective support, consider including:
+- The specific challenge you're facing
+- The stage of dementia the person is experiencing
+- Any approaches you've already tried
+- The person's background or preferences that might be relevant`;
 };

@@ -3,7 +3,7 @@ import Layout from "@/components/Layout";
 import FileUploader from "@/components/FileUploader";
 import MockCaseFile from "@/components/MockCaseFile";
 import { Upload } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -31,7 +31,7 @@ interface RecentFile {
 }
 
 // Define the type for the RPC function parameters
-type GetRecentFilesParams = {
+interface GetRecentFilesParams {
   limit_count: number;
 }
 
@@ -42,23 +42,17 @@ export default function UploadPage() {
   const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
 
-  useEffect(() => {
-    fetchRecentFiles();
-    
-    if (id) {
-      setSelectedPatientId(id);
-    }
-  }, [id]);
-
-  const fetchRecentFiles = async () => {
+  // Use useCallback to memoize the fetchRecentFiles function
+  const fetchRecentFiles = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Fix the typing issue by providing both required type parameters
+      // Fix the typing issue with a correct approach
       const { data, error } = await supabase
-        .rpc<RecentFile[], GetRecentFilesParams>('get_recent_files', { 
+        .rpc('get_recent_files', { 
           limit_count: 5 
-        });
+        })
+        .returns<RecentFile[]>();
       
       if (error) throw error;
       
@@ -73,9 +67,18 @@ export default function UploadPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const handleDownload = async (filePath: string, fileName: string) => {
+  useEffect(() => {
+    fetchRecentFiles();
+    
+    if (id) {
+      setSelectedPatientId(id);
+    }
+  }, [id, fetchRecentFiles]);
+
+  // Memoize the download handler
+  const handleDownload = useCallback(async (filePath: string, fileName: string) => {
     try {
       const path = filePath.includes('patient-files/') 
         ? filePath.split('patient-files/')[1] 
@@ -103,15 +106,16 @@ export default function UploadPage() {
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
 
-  const formatFileSize = (bytes: number) => {
+  // Memoize utility functions
+  const formatFileSize = useCallback((bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
     else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     else return (bytes / 1048576).toFixed(1) + ' MB';
-  };
+  }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     try {
       const date = new Date(dateString);
       return format(date, 'MMM d, yyyy');
@@ -119,14 +123,14 @@ export default function UploadPage() {
       console.error("Date formatting error:", error);
       return "Invalid date";
     }
-  };
+  }, []);
 
-  const handleCaseLoaded = (caseData: any) => {
+  const handleCaseLoaded = useCallback((caseData: any) => {
     toast({
       title: "Case Loaded",
       description: "The sample case has been added to the patient's records.",
     });
-  };
+  }, [toast]);
 
   return (
     <Layout>
@@ -167,9 +171,9 @@ export default function UploadPage() {
                     <TableRow>
                       <TableHead>File Name</TableHead>
                       <TableHead>Patient</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Size</TableHead>
-                      <TableHead>Uploaded</TableHead>
+                      <TableHead className="hidden md:table-cell">Type</TableHead>
+                      <TableHead className="hidden md:table-cell">Size</TableHead>
+                      <TableHead className="hidden md:table-cell">Uploaded</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -178,9 +182,9 @@ export default function UploadPage() {
                       <TableRow key={file.id}>
                         <TableCell className="font-medium">{file.file_name}</TableCell>
                         <TableCell>{file.patient_name}</TableCell>
-                        <TableCell>{file.file_category}</TableCell>
-                        <TableCell>{formatFileSize(file.file_size)}</TableCell>
-                        <TableCell>{formatDate(file.upload_date)}</TableCell>
+                        <TableCell className="hidden md:table-cell">{file.file_category}</TableCell>
+                        <TableCell className="hidden md:table-cell">{formatFileSize(file.file_size)}</TableCell>
+                        <TableCell className="hidden md:table-cell">{formatDate(file.upload_date)}</TableCell>
                         <TableCell className="text-right">
                           <Button 
                             variant="ghost" 

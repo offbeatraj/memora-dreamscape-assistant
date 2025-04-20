@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,55 +29,79 @@ export default function PatientAIAssistant() {
   const [caseFiles, setCaseFiles] = useState<string>("");
   const { toast } = useToast();
 
-  useEffect(() => {
-    const handlePatientDataLoaded = async (event: CustomEvent<PatientDataEvent>) => {
-      setPatientData(event.detail);
+  // Memoize the fetchPatientCaseFiles function
+  const fetchPatientCaseFiles = useCallback(async (patientId: string) => {
+    try {
+      const patientCaseFiles = await getPatientCaseFiles(patientId);
+      setCaseFiles(patientCaseFiles);
+      return patientCaseFiles;
+    } catch (error) {
+      console.error("Error getting case files:", error);
+      return "";
+    }
+  }, []);
+
+  // Handle patient data loaded event
+  const handlePatientDataLoaded = useCallback(async (event: CustomEvent<PatientDataEvent>) => {
+    setPatientData(event.detail);
+    
+    if (event.detail && event.detail.patient) {
+      storePatientData(event.detail.patient.id, event.detail);
       
-      if (event.detail && event.detail.patient) {
-        storePatientData(event.detail.patient.id, event.detail);
-        
-        const initialGreeting = `I'm ready to answer questions about ${event.detail.patient.name}'s condition and care. What would you like to know?`;
-        setResponse(initialGreeting);
-        
-        setConversationHistory([`AI: ${initialGreeting}`]);
-        
-        try {
-          const patientCaseFiles = await getPatientCaseFiles(event.detail.patient.id);
-          setCaseFiles(patientCaseFiles);
-        } catch (error) {
-          console.error("Error getting case files:", error);
-        }
-      }
-    };
+      const initialGreeting = `I'm ready to answer questions about ${event.detail.patient.name}'s condition and care. What would you like to know?`;
+      setResponse(initialGreeting);
+      
+      setConversationHistory([`AI: ${initialGreeting}`]);
+      
+      await fetchPatientCaseFiles(event.detail.patient.id);
+    }
+  }, [fetchPatientCaseFiles]);
 
-    // Listen for file upload events to refresh case files
-    const handleFileUploaded = async (event: CustomEvent<{patientId: string}>) => {
-      if (patientData?.patient && event.detail.patientId === patientData.patient.id) {
-        try {
-          const updatedCaseFiles = await getPatientCaseFiles(patientData.patient.id);
-          setCaseFiles(updatedCaseFiles);
-          
-          if (updatedCaseFiles && !caseFiles) {
-            toast({
-              title: "Case Files Added",
-              description: "New case information is now available to the assistant.",
-            });
-          }
-        } catch (error) {
-          console.error("Error refreshing case files:", error);
+  // Handle file upload events
+  const handleFileUploaded = useCallback(async (event: CustomEvent<{patientId: string}>) => {
+    if (patientData?.patient && event.detail.patientId === patientData.patient.id) {
+      try {
+        const updatedCaseFiles = await fetchPatientCaseFiles(patientData.patient.id);
+        
+        if (updatedCaseFiles && !caseFiles) {
+          toast({
+            title: "Case Files Added",
+            description: "New case information is now available to the assistant.",
+          });
         }
+      } catch (error) {
+        console.error("Error refreshing case files:", error);
       }
-    };
+    }
+  }, [patientData, caseFiles, fetchPatientCaseFiles, toast]);
 
+  useEffect(() => {
+    // Add event listeners
     document.addEventListener('patientDataLoaded', handlePatientDataLoaded as EventListener);
     document.addEventListener('patientFileUploaded', handleFileUploaded as EventListener);
     
+    // Clean up event listeners
     return () => {
       document.removeEventListener('patientDataLoaded', handlePatientDataLoaded as EventListener);
       document.removeEventListener('patientFileUploaded', handleFileUploaded as EventListener);
     };
-  }, [patientData, caseFiles]);
+  }, [handlePatientDataLoaded, handleFileUploaded]);
 
+  // Memoize the patient context
+  const patientContext = useMemo(() => {
+    if (!patientData?.patient) return "";
+    
+    return `Context: This is about patient ${patientData.patient.name} who has ${patientData.patient.diagnosis} in ${patientData.patient.stage} stage. 
+    Age: ${patientData.patient.age}
+    Case Study Details: ${patientData.caseStudy}
+    
+    ${caseFiles ? `Additional Case Files: ${caseFiles}` : ''}
+    
+    Previous conversation context:
+    ${conversationHistory.slice(-6).join("\n")}`;
+  }, [patientData, caseFiles, conversationHistory]);
+
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -87,21 +111,7 @@ export default function PatientAIAssistant() {
     
     setIsLoading(true);
     try {
-      let prompt = input;
-      let patientContext = "";
-      
-      if (patientData && patientData.patient) {
-        patientContext = `Context: This is about patient ${patientData.patient.name} who has ${patientData.patient.diagnosis} in ${patientData.patient.stage} stage. 
-        Age: ${patientData.patient.age}
-        Case Study Details: ${patientData.caseStudy}
-        
-        ${caseFiles ? `Additional Case Files: ${caseFiles}` : ''}
-        
-        Previous conversation context:
-        ${conversationHistory.slice(-6).join("\n")}`;
-      }
-      
-      const aiResponse = await getPatientModelResponse(prompt, patientContext);
+      const aiResponse = await getPatientModelResponse(input, patientContext);
       setResponse(aiResponse);
       
       if (patientData?.patient?.id) {
@@ -122,9 +132,10 @@ export default function PatientAIAssistant() {
     }
   };
 
-  const handleSelectQuestion = (question: string) => {
+  // Handle question selection
+  const handleSelectQuestion = useCallback((question: string) => {
     setInput(question);
-  };
+  }, []);
 
   return (
     <div className={`${patientData ? "block" : "hidden"} mb-6`}>
