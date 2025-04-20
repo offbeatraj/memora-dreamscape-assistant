@@ -216,7 +216,11 @@ const identifyCaregiverQuestionType = (prompt: string): string => {
   return "general";
 };
 
-export const getPatientModelResponse = async (prompt: string, context?: string): Promise<string> => {
+export const getPatientModelResponse = async (
+  prompt: string, 
+  context?: string,
+  conversationHistory?: string[]
+): Promise<string> => {
   // Check if we have API access
   const apiKey = await getOpenAIKey();
   
@@ -320,7 +324,11 @@ Your response should be direct, helpful, and specifically tailored to this situa
 };
 
 // Function to get a simulated response
-export const getModelResponse = async (prompt: string, patientContext?: string | null, conversationHistory?: string[]): Promise<string> => {
+export const getModelResponse = async (
+  prompt: string, 
+  patientContext?: string | null, 
+  conversationHistory?: string[]
+): Promise<string> => {
   try {
     // Use enhanced prompts for better accuracy
     const enhancedPrompt = enhancePromptWithContext(

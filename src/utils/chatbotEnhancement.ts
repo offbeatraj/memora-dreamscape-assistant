@@ -59,7 +59,7 @@ export const questionPatterns: QuestionPattern[] = [
 export function enhancePromptWithContext(
   userQuestion: string, 
   patientContext: string | null,
-  conversationHistory: string[]
+  conversationHistory: string[] = []  // Make this parameter optional with default empty array
 ): string {
   // Determine question category
   const matchedCategories = questionPatterns.filter(category => 

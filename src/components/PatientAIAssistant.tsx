@@ -122,19 +122,21 @@ export default function PatientAIAssistant() {
     
     setIsLoading(true);
     try {
-      // Pass the full conversation history for better context awareness
+      // FIX: Pass only required arguments (input and patientContext)
       const aiResponse = await getPatientModelResponse(
         input, 
-        patientContext,
-        conversationHistory
+        patientContext
       );
       setResponse(aiResponse);
       
       if (patientData?.patient?.id) {
-        // Save the conversation asynchronously
+        // FIX: Handle Promise properly without using catch on boolean
         Promise.resolve().then(() => {
-          savePatientConversation(patientData.patient.id, `Q: ${input}\nA: ${aiResponse}`, "AI Caregiver Assistant")
-            .catch(err => console.error("Error saving conversation:", err));
+          try {
+            savePatientConversation(patientData.patient.id, `Q: ${input}\nA: ${aiResponse}`, "AI Caregiver Assistant");
+          } catch (err) {
+            console.error("Error saving conversation:", err);
+          }
         });
       }
       

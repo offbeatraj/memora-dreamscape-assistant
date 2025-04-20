@@ -29,11 +29,6 @@ interface RecentFile {
   patient_name: string;
 }
 
-// Define the type for the RPC function parameters
-interface GetRecentFilesParams {
-  limit_count: number;
-}
-
 export default function UploadPage() {
   const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,20 +36,18 @@ export default function UploadPage() {
   const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
 
-  // Use useCallback to memoize the fetchRecentFiles function
   const fetchRecentFiles = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Fix the typing issue by explicitly typing the function call
-      const { data, error } = await supabase.rpc<RecentFile[], GetRecentFilesParams>(
+      const { data, error } = await supabase.rpc(
         'get_recent_files', 
         { limit_count: 5 }
       );
       
       if (error) throw error;
       
-      setRecentFiles(data || []);
+      setRecentFiles((data || []) as RecentFile[]);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
@@ -67,7 +60,6 @@ export default function UploadPage() {
     }
   }, [toast]);
 
-  // Optimize effect with proper dependencies
   useEffect(() => {
     fetchRecentFiles();
     
@@ -76,7 +68,6 @@ export default function UploadPage() {
     }
   }, [id, fetchRecentFiles]);
 
-  // Memoize the download handler
   const handleDownload = useCallback(async (filePath: string, fileName: string) => {
     try {
       const path = filePath.includes('patient-files/') 
@@ -107,7 +98,6 @@ export default function UploadPage() {
     }
   }, [toast]);
 
-  // Memoize utility functions
   const formatFileSize = useCallback((bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
     else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
