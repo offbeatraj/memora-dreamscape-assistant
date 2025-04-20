@@ -54,11 +54,11 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix the typing issue by explicitly typing the parameters
+      // Fix the typing issue by providing both required type parameters
       const { data, error } = await supabase
-        .rpc<RecentFile[]>('get_recent_files', { 
+        .rpc<RecentFile[], GetRecentFilesParams>('get_recent_files', { 
           limit_count: 5 
-        } as GetRecentFilesParams);
+        });
       
       if (error) throw error;
       
