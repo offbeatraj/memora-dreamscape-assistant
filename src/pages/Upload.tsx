@@ -1,3 +1,4 @@
+
 import Layout from "@/components/Layout";
 import FileUploader from "@/components/FileUploader";
 import MockCaseFile from "@/components/MockCaseFile";
@@ -40,14 +41,13 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase.rpc(
-        'get_recent_files', 
-        { limit_count: 5 }
-      );
+      const { data, error } = await supabase
+        .rpc('get_recent_files', { limit_count: 5 });
       
       if (error) throw error;
       
-      setRecentFiles((data || []) as RecentFile[]);
+      // Explicitly cast the data to the RecentFile[] type
+      setRecentFiles(data ? data as RecentFile[] : []);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
