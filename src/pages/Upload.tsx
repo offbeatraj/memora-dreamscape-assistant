@@ -30,6 +30,11 @@ interface RecentFile {
   patient_name: string;
 }
 
+// Define the custom RPC function type
+type SupabaseCustomFunctions = {
+  get_recent_files: (args: { limit_count: number }) => Promise<RecentFile[]>;
+};
+
 export default function UploadPage() {
   const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,13 +46,13 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
+      // Type-cast the rpc method to use our custom function type
       const { data, error } = await supabase
-        .rpc('get_recent_files', { limit_count: 5 });
+        .rpc<RecentFile[]>('get_recent_files', { limit_count: 5 });
       
       if (error) throw error;
       
-      // Explicitly cast the data to the RecentFile[] type
-      setRecentFiles(data ? data as RecentFile[] : []);
+      setRecentFiles(data || []);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
