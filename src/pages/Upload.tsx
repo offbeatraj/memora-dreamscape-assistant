@@ -46,9 +46,9 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Type-cast the rpc method to use our custom function type
+      // Fix: Pass both input and output type arguments to rpc
       const { data, error } = await supabase
-        .rpc<RecentFile[]>('get_recent_files', { limit_count: 5 });
+        .rpc<{ limit_count: number }, RecentFile[]>('get_recent_files', { limit_count: 5 });
       
       if (error) throw error;
       
