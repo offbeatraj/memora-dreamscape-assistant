@@ -216,6 +216,25 @@ const identifyCaregiverQuestionType = (prompt: string): string => {
   return "general";
 };
 
+// Add this helper function to extract relevant context from case studies
+const extractContextFromCaseStudy = (caseStudy: string): string => {
+  const lines = caseStudy.split('\n');
+  let relevantContext = '';
+  
+  for (const line of lines) {
+    // Focus on key information like symptoms, behaviors, and care situations
+    if (line.toLowerCase().includes('symptom') || 
+        line.toLowerCase().includes('behav') ||
+        line.toLowerCase().includes('care') ||
+        line.toLowerCase().includes('condition') ||
+        line.toLowerCase().includes('diagnosis')) {
+      relevantContext += line + '\n';
+    }
+  }
+  
+  return relevantContext.trim();
+};
+
 export const getPatientModelResponse = async (
   prompt: string, 
   context?: string,
@@ -229,54 +248,13 @@ export const getPatientModelResponse = async (
       // Identify question type to customize the system prompt
       const questionType = identifyCaregiverQuestionType(prompt);
       
-      // Customize system prompt based on question type
-      let systemPrompt = "You are a specialized AI assistant for Alzheimer's and dementia caregivers.";
+      // Extract relevant context from case study if available
+      const relevantContext = context ? extractContextFromCaseStudy(context) : '';
       
-      // Add specialized instructions based on question type
-      if (questionType.includes('strategy')) {
-        systemPrompt += `
-When providing care strategies for dementia patients, always prioritize these evidence-based approaches:
-
-1. Person-Centered Care - Always consider the individual's preferences, history, and dignity
-2. Validation - Acknowledge feelings without contradicting misconceptions
-3. Redirection - Gently guide attention to another topic or activity when distressed
-4. Environmental Adaptation - Suggest changes to surroundings that reduce stress
-5. Simple Communication - Use clear, short sentences and visual cues
-
-When responding to this caregiver question about ${questionType.replace('_strategy', '')}, offer at least two specific approaches:
-- One approach should demonstrate validation and redirection techniques
-- Compare this with direct reality orientation approaches (usually less effective)
-- Explain why person-centered approaches that preserve dignity are typically more successful
-- If available in the patient context, reference specific details about the patient to personalize the advice
-
-Format your response to clearly label and compare these different approaches.`;
-      } else if (questionType === "condition_information") {
-        systemPrompt += `
-Provide scientific, evidence-based information about Alzheimer's disease or dementia, while keeping it accessible and relevant to caregivers. Include:
-- Recent research findings when relevant
-- Accurate descriptions of symptoms and mechanisms
-- Clear distinctions between different types of dementia when applicable
-- Focus on practical implications for caregiving
-- Avoid medical jargon when possible, but explain necessary terms`;
-      } else if (questionType === "caregiver_support") {
-        systemPrompt += `
-Respond with empathy and validation to the caregiver's emotional needs. Include:
-- Acknowledgment of the challenges they're facing
-- Validation of their feelings
-- Practical self-care suggestions
-- Resources for caregiver support
-- Reminders about the importance of their own wellbeing`;
-      }
-      
-      // Enhanced prompt for care strategies
-      const enhancedPrompt = `
-${systemPrompt}
-${context ? `\nContext about the patient:\n${context}\n` : ''}
-      
-The caregiver is asking about: ${prompt}
-
-Provide a compassionate, practical response that respects the dignity of the person with dementia.
-Your response should be direct, helpful, and specifically tailored to this situation for caregivers.`;
+      // Customize system prompt based on question type and available context
+      const systemPrompt = `You are a specialized AI assistant for Alzheimer's and dementia caregivers.
+      ${relevantContext ? `\nRelevant patient context:\n${relevantContext}` : ''}
+      ${context ? `\nFull case study context:\n${context}` : ''}`;
       
       const response = await fetch("https://router.requesty.ai/v1/chat/completions", {
         method: "POST",
@@ -293,7 +271,7 @@ Your response should be direct, helpful, and specifically tailored to this situa
             },
             {
               role: "user",
-              content: enhancedPrompt
+              content: prompt
             }
           ],
           temperature: 0.5,
@@ -305,15 +283,14 @@ Your response should be direct, helpful, and specifically tailored to this situa
       
       if (data.error) {
         console.error("API error:", data.error);
-        return `Error from API: ${data.error.message || "Unknown error"}`;
+        return getSimulatedResponse(prompt, context);
       }
       
       if (data.choices && data.choices[0]) {
         return data.choices[0].message.content;
-      } else {
-        console.error("Unexpected API response:", data);
-        return getSimulatedResponse(prompt, context, questionType);
       }
+      
+      return getSimulatedResponse(prompt, context);
     } catch (error) {
       console.error("Error calling API:", error);
       return getSimulatedResponse(prompt, context);

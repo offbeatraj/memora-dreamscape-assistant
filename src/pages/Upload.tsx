@@ -1,4 +1,3 @@
-
 import Layout from "@/components/Layout";
 import FileUploader from "@/components/FileUploader";
 import MockCaseFile from "@/components/MockCaseFile";
@@ -15,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Trash } from "lucide-react";
+import { FileText, Download } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
 
@@ -30,11 +29,6 @@ interface RecentFile {
   patient_name: string;
 }
 
-// Define the input type for the RPC function
-interface GetRecentFilesInput {
-  limit_count: number;
-}
-
 export default function UploadPage() {
   const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,16 +40,26 @@ export default function UploadPage() {
     try {
       setLoading(true);
       
-      // Fix: Explicitly specify both input and output types
-      const { data, error } = await supabase.rpc<GetRecentFilesInput, RecentFile[]>(
-        'get_recent_files', 
-        { limit_count: 5 }
-      );
+      const { data, error } = await supabase
+        .from('patient_files')
+        .select('*, patients!inner(name)')
+        .order('upload_date', { ascending: false })
+        .limit(5);
       
       if (error) throw error;
       
-      // Ensure data is cast to the correct type
-      setRecentFiles(data as RecentFile[] || []);
+      const transformedData: RecentFile[] = data?.map(file => ({
+        id: file.id,
+        file_name: file.file_name,
+        file_path: file.file_path,
+        file_size: file.file_size,
+        file_type: file.file_type,
+        file_category: file.file_category,
+        upload_date: file.upload_date,
+        patient_name: file.patients.name
+      })) || [];
+      
+      setRecentFiles(transformedData);
     } catch (error) {
       console.error("Error fetching files:", error);
       toast({
