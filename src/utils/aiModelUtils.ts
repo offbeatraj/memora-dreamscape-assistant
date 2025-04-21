@@ -283,14 +283,14 @@ export const getPatientModelResponse = async (
       
       if (data.error) {
         console.error("API error:", data.error);
-        return getSimulatedResponse(prompt, context);
+        return getSimulatedResponse(prompt, context, questionType);
       }
       
       if (data.choices && data.choices[0]) {
         return data.choices[0].message.content;
       }
       
-      return getSimulatedResponse(prompt, context);
+      return getSimulatedResponse(prompt, context, questionType);
     } catch (error) {
       console.error("Error calling API:", error);
       return getSimulatedResponse(prompt, context);
@@ -318,26 +318,7 @@ export const getModelResponse = async (
     // The delay simulates network latency
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    const mockResponses: Record<string, string> = {
-      "What are early symptoms of Alzheimer's?": "Early symptoms of Alzheimer's disease typically include:\n\n• Memory loss that disrupts daily life\n• Challenges in planning or solving problems\n• Difficulty completing familiar tasks\n• Confusion with time or place\n• Trouble understanding visual images or spatial relationships\n\n**It's important to note** that these symptoms develop gradually and worsen over time. If you notice these changes, consult with a healthcare professional for proper evaluation.",
-      "medicine": "Medications commonly used for Alzheimer's disease include cholinesterase inhibitors (like Donepezil, Rivastigmine, and Galantamine) and memantine. These medications can help manage symptoms but cannot cure or stop disease progression. Always consult with a healthcare provider for personalized medical advice.",
-      "default": "I'm here to provide information about Alzheimer's disease and memory care. How can I assist you today? I can answer questions about symptoms, care strategies, or provide support for caregivers."
-    };
-    
-    // Find the best matching response or use default
-    let response = mockResponses.default;
-    
-    for (const [key, value] of Object.entries(mockResponses)) {
-      if (enhancedPrompt.toLowerCase().includes(key.toLowerCase())) {
-        response = value;
-        break;
-      }
-    }
-    
-    // Apply additional formatting to improve readability and structure
-    const improvedResponse = improveResponseFormatting(response);
-    
-    return improvedResponse;
+    return getSimulatedResponse(enhancedPrompt, patientContext || undefined);
   } catch (error) {
     console.error("Error in getModelResponse:", error);
     return "I'm sorry, I encountered an error while processing your request. Please try again.";
@@ -349,8 +330,195 @@ const getSimulatedResponse = (prompt: string, context?: string, questionType: st
   const lowerPrompt = prompt.toLowerCase();
   const lowerContext = context ? context.toLowerCase() : '';
   
-  // Check for case scenario about nighttime confusion
-  if ((questionType === "sleep_strategy" || questionType === "confusion_strategy") &&
+  // Check for specific question topics and provide appropriate responses
+  
+  // Alzheimer's symptoms
+  if (lowerPrompt.includes("symptom") && (lowerPrompt.includes("alzheimer") || lowerPrompt.includes("dementia"))) {
+    return `## Common Symptoms of Alzheimer's Disease
+
+Alzheimer's symptoms typically progress through stages:
+
+### Early Stage Symptoms:
+- Memory lapses (forgetting recent conversations or events)
+- Difficulty finding the right words
+- Challenges with problem-solving or planning
+- Confusion about time or place
+- Misplacing items frequently
+- Poor judgment or decision-making
+- Withdrawal from social activities
+- Mood changes including anxiety or depression
+
+### Middle Stage Symptoms:
+- Increased memory loss and confusion
+- Difficulty recognizing family and friends
+- Inability to learn new things
+- Problems with logical thinking
+- Restlessness, agitation, or wandering
+- Suspiciousness or paranoia
+- Impulsive behavior
+- Sleep disturbances
+- Physical problems like incontinence
+
+### Advanced Stage Symptoms:
+- Severe communication difficulties
+- Complete dependence on caregivers
+- Loss of physical abilities (walking, sitting, swallowing)
+- Vulnerability to infections
+- Inability to recognize oneself or loved ones
+
+Each person experiences Alzheimer's differently, and symptoms may overlap between stages.`;
+  }
+  
+  // Medication questions
+  else if (lowerPrompt.includes("medicine") || lowerPrompt.includes("medication") || lowerPrompt.includes("drug") || lowerPrompt.includes("treatment")) {
+    return `## Medications for Alzheimer's Disease
+
+Currently approved medications focus on managing symptoms rather than curing the disease:
+
+### Cholinesterase Inhibitors:
+- **Donepezil (Aricept)** - For all stages
+- **Rivastigmine (Exelon)** - For mild to moderate stages
+- **Galantamine (Razadyne)** - For mild to moderate stages
+- These work by increasing levels of acetylcholine, a chemical messenger important for memory and thinking
+
+### NMDA Receptor Antagonist:
+- **Memantine (Namenda)** - For moderate to severe stages
+- Works by regulating glutamate activity, another important brain chemical
+
+### Combination Therapy:
+- **Namzaric** - Combines donepezil and memantine
+
+### Important Considerations:
+- These medications cannot stop the progression of the disease
+- Effects are usually modest and temporary
+- Side effects may include nausea, vomiting, diarrhea, and sometimes dizziness
+- Regular follow-up with healthcare providers is essential
+
+Always consult with a healthcare professional before starting, stopping or changing any medication regimen.`;
+  }
+  
+  // Communication strategies
+  else if (lowerPrompt.includes("communicat") || lowerPrompt.includes("talk") || lowerPrompt.includes("speak") || lowerPrompt.includes("conversation")) {
+    return `## Communication Strategies for People with Dementia
+
+Effective communication becomes increasingly important as dementia progresses:
+
+### Key Approaches:
+1. **Create the right environment**
+   - Reduce background noise (turn off TV/music)
+   - Ensure good lighting without glare
+   - Choose a quiet, calm setting
+   - Position yourself at eye level
+
+2. **Verbal communication tips**
+   - Use simple, short sentences
+   - Speak slowly and clearly
+   - Ask one question at a time
+   - Provide simple choices rather than open-ended questions
+   - Be patient and allow extra time for responses
+   - Avoid baby talk or talking about the person as if they're not there
+
+3. **Non-verbal techniques**
+   - Maintain gentle eye contact
+   - Use touch appropriately when welcomed
+   - Pay attention to your body language and facial expressions
+   - Watch for their non-verbal cues
+
+4. **Respect and validation**
+   - Listen actively and acknowledge feelings
+   - Avoid correcting or arguing
+   - Join their reality rather than forcing yours
+   - Focus on the emotional truth behind confused statements
+
+These strategies help maintain dignity and reduce frustration for both the person with dementia and their caregiver.`;
+  }
+  
+  // Activities and engagement
+  else if (lowerPrompt.includes("activit") || lowerPrompt.includes("exercise") || lowerPrompt.includes("game") || lowerPrompt.includes("engage")) {
+    return `## Beneficial Activities for People with Dementia
+
+Appropriate activities can enhance quality of life and provide meaningful engagement:
+
+### Cognitive Activities:
+- Simple puzzles or matching games
+- Looking through photo albums with simple discussions
+- Listening to familiar music
+- Reading together or using audiobooks
+- Reminiscence activities with familiar objects
+- Sorting tasks (buttons, coins, etc.)
+
+### Physical Activities:
+- Gentle walking in safe environments
+- Seated exercises
+- Simple dance movements
+- Gardening with supervision
+- Balloon volleyball or soft ball tossing
+- Tai chi or gentle yoga adapted for ability level
+
+### Sensory Activities:
+- Hand massage with scented lotion
+- Textured sensory items to touch and explore
+- Music therapy or singing familiar songs
+- Looking at colorful pictures or objects
+- Simple cooking or baking with strong aromas
+
+### Creative Activities:
+- Painting or coloring with non-toxic supplies
+- Clay or playdough modeling
+- Simple crafts with minimal steps
+- Singing or playing simple instruments
+
+The best activities are those that:
+- Connect to past interests and skills
+- Match current abilities without causing frustration
+- Provide a sense of accomplishment
+- Allow for social interaction
+- Can be broken down into simple steps
+
+Always monitor for signs of fatigue or frustration and be ready to modify or end activities as needed.`;
+  }
+  
+  // Caregiver self-care
+  else if ((lowerPrompt.includes("caregiver") || lowerPrompt.includes("caring")) && 
+          (lowerPrompt.includes("stress") || lowerPrompt.includes("burnout") || lowerPrompt.includes("exhausted") || lowerPrompt.includes("self care"))) {
+    return `## Self-Care Strategies for Caregivers
+
+Caring for someone with dementia can be emotionally and physically demanding. Taking care of yourself isn't selfish—it's essential.
+
+### Practical Self-Care Tips:
+
+1. **Accept help**
+   - Make a list of specific tasks others can do
+   - Use online care calendars to coordinate help
+   - Consider respite care services for breaks
+
+2. **Set realistic expectations**
+   - Break large tasks into smaller steps
+   - Establish priorities and learn to say no
+   - Understand that perfect care isn't possible
+
+3. **Connect with others**
+   - Join a caregiver support group (online or in-person)
+   - Schedule regular check-ins with friends or family
+   - Consider speaking with a therapist or counselor
+
+4. **Protect your health**
+   - Schedule and keep your own medical appointments
+   - Aim for sufficient sleep
+   - Choose nutritious foods when possible
+   - Find ways to incorporate movement into your day
+
+5. **Take brief restorative breaks**
+   - Practice 5-minute meditation or deep breathing
+   - Step outside for fresh air
+   - Listen to favorite music
+   - Keep a gratitude journal
+
+Remember that your well-being directly affects your ability to provide care. Reaching out for support is a sign of strength, not weakness.`;
+  }
+  
+  // Check for case scenario about nighttime confusion (as in the original code)
+  else if ((questionType === "sleep_strategy" || questionType === "confusion_strategy") &&
       (lowerContext.includes('pam') || lowerContext.includes('anxiously getting ready') || 
        lowerContext.includes('night') || lowerContext.includes('2 a.m.'))) {
     
@@ -397,8 +565,8 @@ This respects Pam's dignity while gently guiding her back to bed, minimizing con
     }
   }
   
-  // Memory issues
-  if (questionType === "memory_strategy") {
+  // Memory issues (as in the original code)
+  else if (questionType === "memory_strategy" || lowerPrompt.includes("memory") || lowerPrompt.includes("forget") || lowerPrompt.includes("remember")) {
     return `## Effective Strategies for Memory Support
 
 Memory challenges are one of the core symptoms of dementia. Here are practical approaches:
@@ -430,43 +598,88 @@ Memory challenges are one of the core symptoms of dementia. Here are practical a
 Remember that memory loss is not something the person can control with effort. The goal is to create an environment that supports them rather than challenging them.`;
   }
   
-  // Medication management
-  if (questionType === "medication_strategy") {
-    return `## Medication Management Strategies
+  // Safety concerns
+  else if (lowerPrompt.includes("safe") || lowerPrompt.includes("fall") || lowerPrompt.includes("wander") || lowerPrompt.includes("danger")) {
+    return `## Safety Measures for People with Dementia
 
-Managing medications for someone with dementia requires careful approaches:
+Creating a safe environment is essential for someone with dementia. Here are key considerations:
 
-### ✅ Recommended Approaches:
+### Home Safety Modifications:
+- Install grab bars in bathrooms and hallways
+- Remove or secure loose rugs to prevent trips
+- Add adequate lighting, especially on stairs and in hallways
+- Consider motion-sensor lights for nighttime
+- Secure or remove dangerous items (knives, toxic cleaning supplies)
+- Install stove safety devices that automatically shut off
+- Lower water temperature to prevent scalding
+- Add childproof locks to cabinets with hazardous items
+- Remove or secure furniture with sharp edges
 
-**1. Simplified Routines:**
-- Give medications at the same times each day
-- Link medication times to consistent daily events (breakfast, bedtime)
-- Use pill organizers with clear day/time labels
-- Consider automated pill dispensers with alarms for later stages
+### Preventing Wandering:
+- Install door alarms or bells
+- Use visual barriers like curtains over doors
+- Consider GPS tracking devices or ID bracelets
+- Establish a daily routine to reduce restlessness
+- Secure the yard if outdoor wandering is common
+- Alert neighbors and local authorities about wandering concerns
+- Keep photos and description ready in case of wandering
 
-**2. Supportive Communication:**
-- Provide simple, step-by-step instructions
-- Use a calm, reassuring tone
-- Avoid rushing or showing frustration
-- Offer a small glass of water or preferred beverage
+### Fall Prevention:
+- Remove clutter from walkways
+- Ensure good lighting throughout the home
+- Consider contrasting colors for steps and threshold edges
+- Install handrails on both sides of stairs
+- Provide stable, appropriate height seating
+- Consider physical therapy for gait training
+- Review medications for those that might increase fall risk
 
-**3. Environmental Adjustments:**
-- Remove visual clutter when giving medications
-- Ensure good lighting
-- Consider easy-to-swallow forms if pill-swallowing is difficult
-- Keep backup supplies in a secure location
+Regular safety assessments become increasingly important as dementia progresses, and adaptations should be made based on changing abilities and behaviors.`;
+  }
+  
+  // Eating and nutrition
+  else if (lowerPrompt.includes("eat") || lowerPrompt.includes("food") || lowerPrompt.includes("meal") || lowerPrompt.includes("nutrition")) {
+    return `## Nutrition and Mealtime Strategies for Dementia Care
 
-### ❌ Less Effective Approaches:
-- Complex explanations about why medications are needed
-- Arguing or forcing if resistance occurs
-- Irregular timing or approaches
-- Hiding medication in food without prior medical approval (may be appropriate in some cases but requires healthcare provider guidance)
+People with dementia often experience challenges with eating that change throughout the disease progression:
 
-Always consult with healthcare providers about medication challenges, as they may be able to simplify regimens or suggest alternative delivery methods.`;
+### Common Challenges:
+- Forgetting to eat or drink
+- Difficulty using utensils
+- Becoming overwhelmed by too many food choices
+- Decreased ability to sense hunger/thirst
+- Chewing or swallowing difficulties
+- Reduced ability to identify foods
+- Distractions causing abandonment of meals
+
+### Helpful Mealtime Approaches:
+- Establish consistent meal times and locations
+- Reduce distractions (turn off TV, limit conversation)
+- Use contrasting colors (blue plate on white tablecloth)
+- Serve one food at a time if multiple options are overwhelming
+- Cut food into bite-sized pieces before serving
+- Provide adaptive utensils if needed
+- Demonstrate eating motions to encourage mimicking
+- Allow extra time for meals
+- Offer finger foods for independence when utensils become challenging
+
+### Between-Meal Strategies:
+- Provide nutritious, easy-to-eat snacks throughout the day
+- Ensure drinks are visible and accessible
+- Consider smoothies or nutrition supplements for added calories
+- Use verbal and visual reminders to drink water
+
+### When Challenges Increase:
+- Monitor weight regularly
+- Consider consultation with a speech therapist for swallowing issues
+- Focus on food preferences while maintaining nutritional balance
+- Create a pleasant social atmosphere during meals
+
+Remember that as dementia progresses, nutrition goals may shift from perfect dietary balance to ensuring adequate intake and maintaining the dignity and pleasure of eating.`;
   }
   
   // Check for specific patient questions
-  if (context && (lowerPrompt.includes('alzheimer') || lowerPrompt.includes('dementia'))) {
+  else if (context && (lowerPrompt.includes('patient') || lowerContext.includes('patient'))) {
+    // If we have patient context and it's a patient-specific question
     if (lowerPrompt.includes('medicine') || lowerPrompt.includes('medication')) {
       return `Based on the information provided, the patient should continue with their prescribed medication regimen for Alzheimer's disease. Common medications include cholinesterase inhibitors (like Donepezil, Rivastigmine, and Galantamine) and memantine.
 
@@ -484,49 +697,63 @@ However, I don't have specific details about this patient's prescribed medicatio
 
 Always consult with the patient's healthcare provider before making any changes to their medication routine. Regular follow-ups are essential to assess medication effectiveness and adjust as the condition progresses.`;
     } 
-    else if (lowerPrompt.includes('communication') || lowerPrompt.includes('talk')) {
-      return `### Effective Communication Strategies for Dementia Care
+    else if (lowerPrompt.includes('care plan') || lowerPrompt.includes('treatment plan')) {
+      return `## Individualized Care Plan Recommendations
 
-When communicating with someone who has Alzheimer's disease:
+Based on the patient information provided, here's a framework for a comprehensive care plan:
 
-**Before Starting:**
-- Reduce background distractions (turn off TV/radio)
-- Position yourself at eye level, face-to-face
-- Ensure adequate lighting but avoid glare
-- Make sure hearing aids are working if used
+### Daily Care Routine
+- Establish consistent times for waking, meals, activities, and bedtime
+- Schedule activities during the patient's best time of day
+- Plan rest periods between stimulating activities
+- Create visual reminders for the daily schedule
 
-**Essential Techniques:**
-1. **Keep it simple**
-   - Use short, direct sentences
-   - Ask one question at a time
-   - Offer simple choices (limit to two options)
-   - Break instructions into small steps
+### Cognitive Support
+- Provide memory aids appropriate to current cognitive ability
+- Incorporate familiar activities from past interests
+- Allow extra time for processing and responding
+- Use clear, simple communication
 
-2. **Non-verbal communication**
-   - Maintain gentle eye contact
-   - Use appropriate touch when welcomed
-   - Demonstrate actions you're describing
-   - Pay attention to your tone and facial expressions
-   - Notice their non-verbal cues
+### Physical Care
+- Assist with personal hygiene as needed while promoting independence
+- Monitor for pain or discomfort (especially important as verbal abilities decrease)
+- Ensure regular physical activity appropriate to ability level
+- Maintain regular health check-ups and monitoring of existing conditions
 
-3. **Patience and listening**
-   - Allow extra time for responses
-   - Avoid interrupting or rushing
-   - Listen for the feeling behind confused words
-   - Be comfortable with silences
+### Social and Emotional Support
+- Facilitate social connections with family and friends
+- Consider support groups for both patient and caregivers
+- Recognize and address signs of depression or anxiety
+- Create opportunities for meaningful engagement
 
-4. **Validation over correction**
-   - Respond to emotions rather than factual errors
-   - Avoid arguing or correcting mistakes
-   - Redirect gently rather than contradict
-   - Join their reality rather than force yours
+### Safety Measures
+- Adapt the home environment to reduce fall risks
+- Implement wandering prevention strategies if needed
+- Ensure medication safety protocols
+- Consider driving safety if still driving
 
-These approaches help maintain dignity and reduce frustration for both the person with Alzheimer's and their caregiver.`;
+This care plan should be adjusted regularly as needs change, and all caregivers should be familiar with the approaches that work best for this specific patient.`;
+    }
+    else {
+      return `Based on the patient information you've shared, I can provide some guidance specific to their situation.
+
+For someone with ${lowerContext.includes('early') ? 'early-stage' : lowerContext.includes('moderate') ? 'moderate-stage' : lowerContext.includes('advanced') ? 'advanced-stage' : ''} dementia, it's important to focus on:
+
+1. Maintaining a consistent daily routine
+2. Providing appropriate levels of support while encouraging independence where possible
+3. Creating a calm, familiar environment
+4. Using clear, simple communication strategies
+5. Ensuring safety while respecting dignity
+
+Each person's experience with dementia is unique, and care approaches should be personalized based on their specific needs, preferences, and changing abilities.
+
+If you can share more specific details about the challenges you're facing with this patient, I can provide more targeted guidance and strategies.`;
     }
   }
   
   // Default response for other questions
-  return `I'm here to help with questions about Alzheimer's disease and caregiving strategies. Based on evidence-based approaches, I can provide guidance on managing symptoms, communication techniques, daily care routines, and emotional support for both patients and caregivers. 
+  else {
+    return `I'm here to help with questions about Alzheimer's disease and caregiving strategies. Based on evidence-based approaches, I can provide guidance on managing symptoms, communication techniques, daily care routines, and emotional support for both patients and caregivers. 
 
 If you're looking for specific advice about a patient case or scenario, please provide more details about the situation, and I'd be happy to suggest appropriate care strategies.
 
@@ -535,4 +762,5 @@ For the most effective support, consider including:
 - The stage of dementia the person is experiencing
 - Any approaches you've already tried
 - The person's background or preferences that might be relevant`;
+  }
 };
