@@ -1,38 +1,66 @@
 
+import { useState } from "react";
+import { MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { memo } from "react";
 
-interface ChatSuggestionsProps {
+interface OptimizedChatSuggestionsProps {
   questions: string[];
   onSelectQuestion: (question: string) => void;
   isPatientMode?: boolean;
 }
 
-// Create a memoized component for suggestions to prevent unnecessary re-renders
-const OptimizedChatSuggestions = memo(function OptimizedChatSuggestions({
+export default function OptimizedChatSuggestions({
   questions,
   onSelectQuestion,
-  isPatientMode = false,
-}: ChatSuggestionsProps) {
+  isPatientMode = false
+}: OptimizedChatSuggestionsProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const displayedQuestions = isExpanded ? questions : questions.slice(0, 3);
+
   return (
-    <div className="mb-4 flex flex-wrap gap-2">
-      {questions.map((question, index) => (
-        <Button
-          key={index}
-          variant="outline"
-          size="sm"
-          onClick={() => onSelectQuestion(question)}
-          className={`text-xs ${
-            isPatientMode 
-              ? "bg-white/80 hover:bg-white transition-all duration-300 border-memora-purple/20" 
-              : "bg-white/80 hover:bg-white transition-all duration-300 hover:shadow-sm"
-          }`}
-        >
-          {question.length > 40 ? question.substring(0, 37) + "..." : question}
-        </Button>
-      ))}
+    <div className="mb-2">
+      <div className="flex items-center gap-2 mb-2">
+        <MessageCircle className="h-4 w-4 text-memora-purple" />
+        <h3 className="text-sm font-medium">
+          {isPatientMode ? "Patient-specific questions" : "Suggested questions"}
+        </h3>
+        {questions.length > 3 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="h-6 px-2 text-xs"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="h-3 w-3 mr-1" />
+                Show Less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3 w-3 mr-1" />
+                Show More
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {displayedQuestions.map((question, index) => (
+          <Button
+            key={index}
+            variant="outline"
+            size="sm"
+            className={`text-left justify-start h-auto py-2 text-sm ${
+              isPatientMode ? "bg-memora-purple/5 border-memora-purple/20" : ""
+            }`}
+            onClick={() => onSelectQuestion(question)}
+          >
+            {question}
+          </Button>
+        ))}
+      </div>
     </div>
   );
-});
-
-export default OptimizedChatSuggestions;
+}

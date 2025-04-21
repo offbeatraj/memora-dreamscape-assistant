@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -650,23 +651,23 @@ export default function ChatInterface() {
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {generatedPatientQuestions.map((question, index) => (
                   <div 
-                    key={index} 
-                    className="bg-white/80 p-3 rounded-lg flex items-center justify-between cursor-pointer hover:bg-white transition-colors shadow-sm"
-                    onClick={() => {
-                      handleSampleQuestion(question);
-                      setActiveTab("chat");
-                    }}
+                    key={index}
+                    onClick={() => handleSampleQuestion(question)}
+                    className="p-3 bg-white/80 rounded-md hover:bg-white cursor-pointer transition-colors"
                   >
                     <p className="text-sm">{question}</p>
-                    <Button variant="ghost" size="sm" className="opacity-50 hover:opacity-100">
-                      <Send className="h-3 w-3" />
-                    </Button>
                   </div>
                 ))}
               </div>
             </Card>
           ) : (
-            <QuestionGenerator />
+            <Card className="glass-card p-4 text-center">
+              <h3 className="text-lg font-medium mb-2">Patient Questions Generator</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Select a patient from the patient selector to see generated questions based on their condition and case history.
+              </p>
+              <QuestionGenerator />
+            </Card>
           )}
         </TabsContent>
       </Tabs>

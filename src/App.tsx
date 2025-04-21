@@ -1,41 +1,24 @@
 
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Chat from "./pages/Chat";
-import Upload from "./pages/Upload";
-import Resources from "./pages/Resources";
-import Dashboard from "./pages/Dashboard";
-import NotFound from "./pages/NotFound";
-import PatientList from "./pages/PatientList";
-import PatientDetail from "./pages/PatientDetail";
-import PatientNew from "./pages/PatientNew";
+import UploadPage from "@/pages/Upload";
+import Chat from "@/pages/Chat";
+import PatientPage from "@/pages/Patient";
+import Dashboard from "@/pages/Dashboard";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+export default function App() {
+  return (
+    <Router>
+      <div className="app-container">
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Dashboard />} />
           <Route path="/chat" element={<Chat />} />
-          <Route path="/upload" element={<Upload />} />
-          <Route path="/resources" element={<Resources />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/patients" element={<PatientList />} />
-          <Route path="/patient/new" element={<PatientNew />} />
-          <Route path="/patient/:id" element={<PatientDetail />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="/upload" element={<UploadPage />} />
+          <Route path="/upload/:id" element={<UploadPage />} />
+          <Route path="/patient/:id" element={<PatientPage />} />
         </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+        <Toaster />
+      </div>
+    </Router>
+  );
+}
