@@ -203,19 +203,21 @@ export default function ChatInterface() {
         ${conversationHistory.join("\n")}
         
         Question: ${content}`;
+        
+        prompt = contextPrompt;
       } else {
         contextPrompt = `Recent conversation:
         ${conversationHistory.join("\n")}
         
         User question: ${content}`;
+        
+        prompt = contextPrompt;
       }
       
       if (type === "image") {
         prompt = "The user has shared a family photo. Please provide a response about this family photo, how it might help with memory, and suggestions for using family photos in memory care.";
       } else if (type === "health") {
         prompt = "The user has shared their health data including blood pressure (120/80), temperature (98.6°F), heart rate (72 bpm), and oxygen (98%). Please provide an analysis and recommendations related to these readings and how they might relate to cognitive health.";
-      } else {
-        prompt = contextPrompt;
       }
       
       const response = await getModelResponse(
