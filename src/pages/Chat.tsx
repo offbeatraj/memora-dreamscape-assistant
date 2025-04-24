@@ -1,3 +1,4 @@
+
 import Layout from "@/components/Layout";
 import ChatInterface from "@/components/ChatInterface";
 import PatientAIAssistant from "@/components/PatientAIAssistant";
@@ -75,6 +76,18 @@ export default function Chat() {
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
     
+    // Create a more detailed case study with varied information
+    const caseStudies = [
+      `Patient ${patient.name} is ${patient.age} years old with ${patient.diagnosis} in the ${patient.stage} stage. ${patient.name} enjoys music and was previously a teacher. Recently struggling with recognizing family members and has episodes of confusion in the evenings.`,
+      
+      `${patient.name}, age ${patient.age}, has been diagnosed with ${patient.diagnosis} and is currently in the ${patient.stage} stage. Previously very independent, now requires assistance with daily tasks. Still maintains interest in gardening and responds well to familiar routines.`,
+      
+      `Case study for ${patient.name} (${patient.age}): Diagnosed with ${patient.diagnosis}, ${patient.stage} stage progression. Shows anxiety in new environments but calms with familiar music. Has been experiencing sleep disturbances and occasional agitation in the afternoons.`
+    ];
+    
+    // Select a random case study for more variation
+    const selectedCaseStudy = caseStudies[Math.floor(Math.random() * caseStudies.length)];
+    
     const patientDataEvent = new CustomEvent('patientDataLoaded', {
       detail: {
         patient: {
@@ -84,7 +97,7 @@ export default function Chat() {
           diagnosis: patient.diagnosis,
           stage: patient.stage
         },
-        caseStudy: `Patient ${patient.name} is ${patient.age} years old with ${patient.diagnosis} in the ${patient.stage} stage.`
+        caseStudy: selectedCaseStudy
       }
     });
     

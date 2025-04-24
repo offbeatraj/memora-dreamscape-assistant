@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { enhancePromptWithContext, improveResponseFormatting } from './chatbotEnhancement';
 
@@ -313,9 +314,8 @@ export const getModelResponse = async (
       conversationHistory || []
     );
     
-    // Simulate AI response - in production this would call an actual AI API
-    // The delay simulates network latency
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Add a random delay between 500-1500ms to simulate network latency
+    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
     
     return getSimulatedResponse(enhancedPrompt, patientContext || undefined);
   } catch (error) {
@@ -329,8 +329,26 @@ const getSimulatedResponse = (prompt: string, context?: string, questionType: st
   const lowerPrompt = prompt.toLowerCase();
   const lowerContext = context ? context.toLowerCase() : '';
   
+  // First, let's check for specific topics to provide more varied responses
+  
+  // Check for greetings and conversation starters
+  if (/^(hello|hi|hey|good morning|good afternoon|good evening|greetings)/.test(lowerPrompt)) {
+    const greetings = [
+      "Hello! I'm your memory assistant. How can I help you today?",
+      "Hi there! I'm ready to assist with any questions about memory care or Alzheimer's.",
+      "Good day! I'm here to provide information and support for caregivers and patients. What would you like to know?",
+      "Hello! I'm your AI companion for memory care. Feel free to ask me anything about dementia or caregiving."
+    ];
+    return greetings[Math.floor(Math.random() * greetings.length)];
+  }
+  
+  // Check for "how are you" questions
+  if (/how are you|how do you feel|how'?s it going|how'?s your day/.test(lowerPrompt)) {
+    return "I'm functioning well, thank you for asking! More importantly, how are you feeling today? Remember that taking care of your own wellbeing is crucial, especially when caring for someone else.";
+  }
+  
   // Check for general questions about the day, time, or weather
-  if (lowerPrompt.includes("what day") || lowerPrompt.includes("what time") || lowerPrompt.includes("date today")) {
+  if (/what (day|date|time) is it|what'?s (today|the date|the time)/.test(lowerPrompt)) {
     const now = new Date();
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const day = days[now.getDay()];
@@ -340,26 +358,27 @@ const getSimulatedResponse = (prompt: string, context?: string, questionType: st
     return `Today is ${day}, ${date}. The current time is ${time}. It's important to help orient someone with memory issues by regularly reminding them of the day, date, and time.`;
   }
   
-  // Check for greeting or introduction
-  if (lowerPrompt.includes("hello") || lowerPrompt.includes("hi there") || lowerPrompt.includes("good morning") || 
-      lowerPrompt.includes("good afternoon") || lowerPrompt.includes("good evening") || lowerPrompt.includes("hey")) {
-    return "Hello! I'm your memory assistant. I can help answer questions about Alzheimer's disease, provide daily care tips, or just chat about whatever's on your mind. How can I assist you today?";
+  // Check for thank you messages
+  if (/thank you|thanks|appreciate|grateful/.test(lowerPrompt)) {
+    const responses = [
+      "You're welcome! I'm glad I could help. Is there anything else you'd like to know?",
+      "It's my pleasure to assist. Please don't hesitate to ask if you have more questions.",
+      "You're very welcome. Supporting caregivers and patients is important work, and I'm here to help.",
+      "Happy to assist! Remember that you can return anytime you need information or support."
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
   }
   
-  // Check for feelings/wellbeing questions
-  if (lowerPrompt.includes("how are you") || lowerPrompt.includes("how do you feel")) {
-    return "I'm functioning well, thank you for asking! More importantly, how are you feeling today? Remember that it's important to take care of your own wellbeing, especially when you're caring for someone else.";
+  // Check for questions about what the AI can do
+  if (/what can you (do|help with)|how (can|do) you (work|help)|what are you capable of/.test(lowerPrompt)) {
+    return "I can help with a variety of topics related to memory care and Alzheimer's disease. I can provide information about symptoms, treatments, caregiving strategies, communication techniques, and daily care routines. I can also offer emotional support for caregivers and answer specific questions about patient care. What would you like to know more about?";
   }
   
-  // Check for requests about patient reminders
-  if (lowerPrompt.includes("reminder") || lowerPrompt.includes("remember to") || lowerPrompt.includes("don't forget")) {
-    return "I've noted that reminder. Setting regular reminders can be very helpful for people with memory challenges. Would you like me to remind you about anything else?";
-  }
+  // Now check for specific question categories to provide detailed responses
   
-  // Check for specific question topics and provide appropriate responses
-  
-  // Alzheimer's symptoms
-  if (lowerPrompt.includes("symptom") && (lowerPrompt.includes("alzheimer") || lowerPrompt.includes("dementia"))) {
+  // Alzheimer's symptoms questions
+  if (/(symptom|sign|indication)(s)? (of|for) (alzheimer'?s|dementia)/.test(lowerPrompt) || 
+      /(alzheimer'?s|dementia) (symptom|sign|indication)(s)?/.test(lowerPrompt)) {
     return `## Common Symptoms of Alzheimer's Disease
 
 Alzheimer's symptoms typically progress through stages:
@@ -396,7 +415,7 @@ Each person experiences Alzheimer's differently, and symptoms may overlap betwee
   }
   
   // Medication questions
-  else if (lowerPrompt.includes("medicine") || lowerPrompt.includes("medication") || lowerPrompt.includes("drug") || lowerPrompt.includes("treatment")) {
+  else if (/medic(ation|ine|al|ines)|drug|treatment|therapy|pill/.test(lowerPrompt)) {
     return `## Medications for Alzheimer's Disease
 
 Currently approved medications focus on managing symptoms rather than curing the disease:
@@ -424,7 +443,7 @@ Always consult with a healthcare professional before starting, stopping or chang
   }
   
   // Communication strategies
-  else if (lowerPrompt.includes("communicat") || lowerPrompt.includes("talk") || lowerPrompt.includes("speak") || lowerPrompt.includes("conversation")) {
+  else if (/communicat|talk|speak|conversation|discussing|telling/.test(lowerPrompt)) {
     return `## Communication Strategies for People with Dementia
 
 Effective communication becomes increasingly important as dementia progresses:
@@ -459,8 +478,8 @@ Effective communication becomes increasingly important as dementia progresses:
 These strategies help maintain dignity and reduce frustration for both the person with dementia and their caregiver.`;
   }
   
-  // Questions about daily activities or routine
-  else if (lowerPrompt.includes("daily") || lowerPrompt.includes("routine") || lowerPrompt.includes("schedule") || lowerPrompt.includes("day to day")) {
+  // Daily activities or routine questions
+  else if (/daily|routine|schedule|day to day|everyday|activities/.test(lowerPrompt)) {
     return `## Creating Effective Daily Routines for People with Dementia
 
 A predictable daily routine helps reduce anxiety and confusion for people with dementia:
@@ -497,69 +516,147 @@ A predictable daily routine helps reduce anxiety and confusion for people with d
 Remember that as dementia progresses, routines will need adjustment, but the structure remains important at every stage.`;
   }
   
-  // Questions about patient-caregiver relationship
-  else if (lowerPrompt.includes("relationship") || lowerPrompt.includes("connection") || lowerPrompt.includes("bond") || 
-          (lowerPrompt.includes("patient") && lowerPrompt.includes("caregiver"))) {
-    return `## Building a Positive Caregiver-Patient Relationship
+  // Food and nutrition questions
+  else if (/food|eat|meal|diet|nutrition|hungry|appetite|cooking/.test(lowerPrompt)) {
+    return `## Nutrition and Meal Strategies for People with Dementia
 
-The relationship between caregiver and the person with dementia profoundly impacts quality of life for both:
+Proper nutrition becomes increasingly challenging as dementia progresses:
 
-### Foundation Principles:
-1. **Dignity and respect**
-   - Maintain adult communication (avoid infantilization)
-   - Include the person in decisions when possible
-   - Respect privacy during personal care
+### Practical Approaches:
+1. **Adapt to changing preferences**
+   - Offer smaller, more frequent meals
+   - Serve one food at a time if multiple foods cause confusion
+   - Provide finger foods for those who have difficulty with utensils
 
-2. **Emotional connection**
-   - Use positive non-verbal communication (smiles, gentle touch)
-   - Express affection appropriately
-   - Look for moments of joy and connection in everyday activities
+2. **Create a positive eating environment**
+   - Minimize distractions during mealtimes
+   - Use contrasting colors (dark plate on light tablecloth)
+   - Ensure adequate lighting
+   - Maintain a calm, unhurried atmosphere
 
-3. **Adaptation**
-   - Adjust expectations as abilities change
-   - Focus on the relationship rather than task completion
-   - Meet the person where they are rather than correcting them
+3. **Address common challenges**
+   - For decreased appetite: serve favorite foods, eat together socially
+   - For forgotten meals: establish regular meal schedule with reminders
+   - For difficulty swallowing: offer soft foods, consult with a speech therapist
+   - For forgetting to chew: gentle verbal reminders, smaller bites
 
-### Communication Approaches:
-- Listen with empathy to underlying emotions
-- Validate feelings even when the content is confused
-- Use reminiscence to strengthen connection
+4. **Consider nutritional content**
+   - Focus on nutrient-dense foods
+   - Ensure adequate hydration (offer beverages regularly)
+   - Consider supplements if recommended by healthcare provider
+   - Monitor weight and adjust caloric intake accordingly
 
-### Managing Role Changes:
-- Acknowledge grief over changing relationship dynamics
-- Find new ways to maintain meaningful connection
-- Seek support from others who understand these transitions
-
-Remember that even with cognitive decline, emotional memory often remains intact. Positive interactions can create feelings of security and contentment even when specific memories fade.`;
+Remember that maintaining dignity and independence during meals is just as important as the nutritional content.`;
   }
   
-  // Questions about caregiver self-care
-  else if ((lowerPrompt.includes("caregiver") || lowerPrompt.includes("caring")) && 
-          (lowerPrompt.includes("stress") || lowerPrompt.includes("burnout") || lowerPrompt.includes("exhausted") || lowerPrompt.includes("self care"))) {
+  // Safety and wandering questions
+  else if (/safe|safety|wander|fall|accident|risk|hazard|danger|protect|secure/.test(lowerPrompt)) {
+    return `## Safety Strategies for People with Dementia
+
+Creating a safe environment reduces risks while promoting independence:
+
+### Home Modifications:
+1. **Prevent falls**
+   - Remove tripping hazards (rugs, cords)
+   - Improve lighting, especially in hallways and bathrooms
+   - Install grab bars in bathrooms
+   - Consider contrasting colors on steps and thresholds
+
+2. **Address wandering**
+   - Secure doors with additional locks placed high or low
+   - Use door alarms or wearable location devices
+   - Create a safe walking path or garden area
+   - Register with MedicAlert® + Alzheimer's Association Safe Return®
+
+3. **Kitchen safety**
+   - Install appliances with auto-shutoff features
+   - Remove or secure dangerous items (knives, cleaning products)
+   - Consider removing stove knobs when not supervised
+   - Maintain familiar placement of necessary items
+
+4. **Bathroom safety**
+   - Set water heater to safe temperature (120°F/49°C)
+   - Use non-slip mats in shower/tub
+   - Consider a shower chair and handheld showerhead
+   - Remove locks from bathroom doors
+
+5. **General safety measures**
+   - Keep emergency numbers visible
+   - Have person wear medical ID
+   - Secure medications
+   - Remove or secure toxic plants and substances
+
+Regular safety assessments become increasingly important as the disease progresses.`;
+  }
+  
+  // Sleep issues
+  else if (/sleep|insomnia|night|bed|rest|awake|up all night|sundown|evening/.test(lowerPrompt)) {
+    return `## Managing Sleep Issues in Dementia
+
+Sleep disturbances are common in people with dementia and can be challenging for caregivers:
+
+### Effective Strategies:
+1. **Establish consistent routines**
+   - Maintain regular sleep and wake times
+   - Create a calming bedtime ritual (soft music, gentle lighting)
+   - Avoid stimulating activities before bed
+
+2. **Optimize the sleep environment**
+   - Ensure comfortable room temperature
+   - Reduce noise and light disruptions
+   - Consider a night light to prevent disorientation
+   - Use familiar bedding and comfort objects
+
+3. **Address sundowning**
+   - Increase lighting in early evening to reduce shadows
+   - Plan engaging activities during typical sundowning hours
+   - Reduce caffeine and sugar intake in afternoon/evening
+   - Consider moving dinner to an earlier time
+
+4. **Manage daytime factors**
+   - Encourage regular physical activity (but not too close to bedtime)
+   - Limit daytime napping, especially late in the day
+   - Ensure adequate exposure to natural daylight
+   - Address pain or medical issues that might interrupt sleep
+
+5. **When sleep problems persist**
+   - Track sleep patterns to identify triggers
+   - Discuss with healthcare provider before using sleep medications
+   - Consider respite care to ensure caregiver can rest
+   - Evaluate for sleep apnea or other sleep disorders
+
+Remember that changes in sleep patterns are often part of the disease progression and may require ongoing adaptation of strategies.`;
+  }
+  
+  // Caregiver stress and burnout
+  else if (/stress|burnout|exhaust|tired|overwhelm|caregiver|self[ -]?care/.test(lowerPrompt)) {
     return `## Self-Care Strategies for Caregivers
 
-Caring for someone with dementia can be emotionally and physically demanding. Taking care of yourself isn't selfish—it's essential.
+Caring for someone with dementia is demanding. Taking care of yourself isn't selfish—it's essential.
 
 ### Practical Self-Care Tips:
 
 1. **Accept help**
-   - Make a list of specific tasks others can do
+   - Make a specific list of tasks others can do
    - Use online care calendars to coordinate help
-   - Consider respite care services for breaks
+   - Consider respite care services for regular breaks
+   - Don't wait until you're overwhelmed to ask for assistance
 
 2. **Set realistic expectations**
    - Break large tasks into smaller steps
    - Establish priorities and learn to say no
    - Understand that perfect care isn't possible
+   - Focus on meaningful moments rather than perfection
 
 3. **Connect with others**
    - Join a caregiver support group (online or in-person)
    - Schedule regular check-ins with friends or family
    - Consider speaking with a therapist or counselor
+   - Share your experiences and feelings with understanding listeners
 
 4. **Protect your health**
    - Schedule and keep your own medical appointments
-   - Aim for sufficient sleep
+   - Aim for sufficient sleep (even if in shorter segments)
    - Choose nutritious foods when possible
    - Find ways to incorporate movement into your day
 
@@ -568,46 +665,51 @@ Caring for someone with dementia can be emotionally and physically demanding. Ta
    - Step outside for fresh air
    - Listen to favorite music
    - Keep a gratitude journal
+   - Use visualization techniques to mentally escape briefly
 
 Remember that your well-being directly affects your ability to provide care. Reaching out for support is a sign of strength, not weakness.`;
   }
   
-  // Questions about memory exercises or cognitive stimulation
-  else if (lowerPrompt.includes("memory exercise") || lowerPrompt.includes("brain game") || lowerPrompt.includes("cognitive") || 
-          lowerPrompt.includes("mental stimulation") || lowerPrompt.includes("brain health")) {
+  // Memory improvement questions
+  else if (/memory (exercise|improve|enhance|boost|help)|brain game|cognitive|mental stimulation|brain health/.test(lowerPrompt)) {
     return `## Cognitive Stimulation Activities for Brain Health
 
 Appropriate cognitive activities can provide meaningful engagement and potentially help maintain function:
 
 ### Beneficial Activities:
 1. **Music therapy**
-   - Listening to familiar songs
+   - Listening to familiar songs from their past
    - Simple singing or rhythm activities
    - Music-associated movement
+   - Using music to trigger positive memories
 
 2. **Sensory stimulation**
    - Texture exploration with different fabrics
-   - Aromatherapy with familiar scents
+   - Aromatherapy with familiar scents (coffee, vanilla, etc.)
    - Nature sounds or guided sensory experiences
+   - Taste experiences with favorite foods or flavors
 
 3. **Art and creativity**
-   - Simple painting or coloring
-   - Collage making with pre-cut images
+   - Simple painting or coloring with adult themes
+   - Collage making with pre-cut images 
    - Clay or playdough modeling
+   - Photography or viewing highly visual books
 
 4. **Reminiscence activities**
-   - Looking through photo albums
+   - Looking through photo albums with simple narration
    - Discussion of past occupations or hobbies
    - Handling familiar objects from earlier life
+   - Creating a simple life story book
 
 5. **Simple games**
    - Matching or sorting activities
    - Large-piece puzzles
    - Modified versions of familiar card games
+   - Word association or simple word games
 
 ### Guidelines for Activities:
 - Match difficulty to current abilities to avoid frustration
-- Focus on enjoyment rather than achievement
+- Focus on enjoyment rather than achievement or correction
 - Build on remaining strengths and past interests
 - Adapt activities as abilities change
 - Schedule during best time of day for energy levels
@@ -615,13 +717,63 @@ Appropriate cognitive activities can provide meaningful engagement and potential
 The goal is to provide meaningful engagement that creates positive emotional experiences rather than testing or challenging the person.`;
   }
   
-  // Default response if no other categories match
+  // Questions about a specific patient (if context is provided)
+  else if (context && /specific|individual|tailored|personal|customized|this patient|their case/.test(lowerPrompt)) {
+    // Extract patient name, age, and stage from context if available
+    let patientName = "the patient";
+    let patientAge = "";
+    let patientStage = "";
+    
+    if (lowerContext.includes("name")) {
+      const nameMatch = context.match(/name[:\s]+([A-Za-z]+)/i);
+      if (nameMatch && nameMatch[1]) {
+        patientName = nameMatch[1];
+      }
+    }
+    
+    if (lowerContext.includes("age")) {
+      const ageMatch = context.match(/age[:\s]+(\d+)/i);
+      if (ageMatch && ageMatch[1]) {
+        patientAge = ageMatch[1];
+      }
+    }
+    
+    if (lowerContext.includes("stage")) {
+      const stageMatch = context.match(/stage[:\s]+(early|moderate|advanced)/i);
+      if (stageMatch && stageMatch[1]) {
+        patientStage = stageMatch[1].toLowerCase();
+      }
+    }
+    
+    return `Based on the information provided about ${patientName}${patientAge ? ` who is ${patientAge} years old` : ""}, 
+    ${patientStage ? `and is in the ${patientStage} stage of dementia` : ""}, 
+    I can provide some tailored guidance.
+
+${patientStage === "early" ? 
+  `Since ${patientName} is in the early stage, focus on maintaining independence while providing subtle support. 
+  Encourage continued participation in favorite activities, establish simple memory systems like calendars and notes, 
+  and facilitate their involvement in future care planning while they can actively participate.` :
+  patientStage === "moderate" ? 
+  `For ${patientName}'s moderate stage dementia, structure and routine become increasingly important. 
+  Simplify communication, provide visual cues around the home, monitor for safety concerns more closely, 
+  and adapt activities to match current abilities while still providing a sense of accomplishment.` :
+  patientStage === "advanced" ? 
+  `In ${patientName}'s advanced stage, comfort and dignity are paramount. 
+  Focus on sensory experiences rather than cognitive challenges, maintain physical comfort through proper positioning and touch, 
+  use a calm and soothing tone even when unsure if they understand, and recognize that emotional connections often remain intact even when other abilities have declined.` :
+  `Each person's experience with dementia is unique. Regular assessment of abilities and needs is important to provide appropriate care 
+  that balances support with maintaining dignity and as much independence as possible.`}
+
+Would you like me to provide more specific recommendations about a particular aspect of ${patientName}'s care?`;
+  }
+  
+  // If no specific patterns match, provide a more generic but still helpful response
   else {
-    // Process the prompt to generate a more tailored default response
+    // Check if the prompt contains certain keywords to make the response a bit more specific
     const topics = [];
     
     if (lowerPrompt.includes("help")) topics.push("assistance");
-    if (lowerPrompt.includes("thank")) topics.push("appreciation");
+    if (lowerPrompt.includes("forget") || lowerPrompt.includes("rememb")) topics.push("memory");
     if (lowerPrompt.includes("sad") || lowerPrompt.includes("depress") || lowerPrompt.includes("upset")) topics.push("emotional support");
     if (lowerPrompt.includes("family") || lowerPrompt.includes("relative") || lowerPrompt.includes("husband") || 
         lowerPrompt.includes("wife") || lowerPrompt.includes("parent")) topics.push("family relationships");
@@ -629,21 +781,32 @@ The goal is to provide meaningful engagement that creates positive emotional exp
     if (lowerPrompt.includes("suggest") || lowerPrompt.includes("recommend") || lowerPrompt.includes("advise")) topics.push("recommendations");
     
     if (topics.length > 0) {
-      if (topics.includes("appreciation")) {
-        return "You're very welcome. It's important that caregivers and those affected by memory conditions have support and information. Is there anything else I can help with today?";
+      if (topics.includes("memory")) {
+        return "Memory challenges can be frustrating both for the person experiencing them and for caregivers. Simple strategies like maintaining routines, using visual cues and reminders, breaking tasks into smaller steps, and creating a calm environment can help. Would you like specific memory support strategies for a particular situation?";
       } else if (topics.includes("emotional support")) {
-        return "I understand this can be emotionally challenging. Many people in similar situations experience these feelings. Remember that seeking support from friends, family, or professional counselors can be incredibly helpful. Would you like to talk more about specific strategies for emotional wellbeing?";
+        return "Emotional well-being is just as important as physical care. Many people affected by memory conditions experience feelings of frustration, sadness, or anxiety. Validating these emotions without trying to 'fix' them is often helpful. Professional support through counselors who specialize in dementia care can also be valuable. Would you like to explore specific emotional support strategies?";
       } else if (topics.includes("family relationships")) {
-        return "Family dynamics often change when memory conditions are involved. Open communication, shared care responsibilities, and education about the condition can help family members adapt. Would you like more specific guidance about family support systems?";
+        return "Family dynamics often change when memory conditions are involved. Open communication, shared care responsibilities, and education about the condition can help family members adapt. Family counseling can sometimes help navigate these changes, and support groups can connect you with others having similar experiences. What specific aspect of family relationships are you concerned about?";
       } else if (topics.includes("explanation")) {
-        return "I'd be happy to explain more about this topic. Could you let me know which specific aspects you'd like me to clarify further?";
+        return "I'd be happy to explain more about this topic. Could you let me know which specific aspects you'd like me to clarify further? I can provide information about the progression of memory conditions, treatment options, caregiving approaches, or resources available to help.";
       } else if (topics.includes("recommendations")) {
-        return "I'd be happy to provide some suggestions based on best practices. To give you the most relevant recommendations, could you share a bit more about the specific situation?";
+        return "I'd be happy to provide some suggestions based on best practices in memory care. To give you the most relevant recommendations, could you share a bit more about the specific situation you're facing? Different stages and symptoms often require different approaches.";
       } else {
-        return "I'm here to help with information about Alzheimer's disease, dementia care, caregiver support, and daily management strategies. Could you provide more details about what you're looking for?";
+        return "I'm here to help with information about Alzheimer's disease, dementia care, caregiver support, and daily management strategies. Could you provide more details about what you're looking for so I can give you the most helpful response?";
       }
     } else {
-      return "I'm here to help with questions about Alzheimer's disease and caregiving strategies. I can provide guidance on managing symptoms, communication techniques, daily care routines, and emotional support for both patients and caregivers. What specific information are you looking for today?";
+      // Truly generic response when we can't detect any specific topic
+      const genericResponses = [
+        "I'm here to help with questions about Alzheimer's disease and caregiving strategies. I can provide guidance on managing symptoms, communication techniques, daily care routines, and emotional support. What specific information would be most helpful to you right now?",
+        
+        "Thank you for your message. To provide the most helpful information, could you share more details about what you're looking for? I can discuss aspects of memory care, caregiver support, or specific symptoms and strategies.",
+        
+        "I'm your memory care assistant, here to provide information and support. Would you like to know more about managing specific symptoms, creating supportive environments, communication strategies, or something else related to memory and cognitive care?",
+        
+        "I'd be happy to assist you with information about dementia care, treatment options, support strategies, or resources. Could you let me know what specific aspect you're interested in learning more about?"
+      ];
+      
+      return genericResponses[Math.floor(Math.random() * genericResponses.length)];
     }
   }
 };
