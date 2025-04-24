@@ -1,9 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { enhancePromptWithContext, improveResponseFormatting } from './chatbotEnhancement';
 
 // API Key Utility Functions
-let cachedOpenAIKey: string | null = "sk-zAFSEFXcTYKcY1E7EfoVE8D51olgUwFPnI35XOnQXMdOjmqZUgbWxcqJNsiCJ4kETwFCVSuy0LjqlJUFf2/aa8+AtXq8BxdShKnbSOPa4AQ=";
+let cachedOpenAIKey: string | null = "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";
 
 export const getOpenAIKey = async (): Promise<string> => {
   // Return hardcoded key directly
