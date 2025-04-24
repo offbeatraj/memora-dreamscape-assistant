@@ -63,6 +63,8 @@ const Home = () => {
 
   useEffect(() => {
     setMounted(true);
+    // Add a console log to confirm this component is being rendered
+    console.log("Home/Index component rendering");
   }, []);
 
   return (

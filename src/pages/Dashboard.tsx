@@ -1,3 +1,4 @@
+
 import Layout from "@/components/Layout";
 import PatientProfile from "@/components/PatientProfile";
 import PatientSelector from "@/components/PatientSelector";
@@ -44,7 +45,7 @@ interface PatientConversation {
 }
 
 export default function Dashboard() {
-  console.log("Dashboard component rendering");
+  console.log("Dashboard component rendering - this is the PATIENT DASHBOARD page");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [patientTasks, setPatientTasks] = useState<PatientTask[]>([]);

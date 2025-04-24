@@ -13,7 +13,7 @@ export default function App() {
     <Router>
       <div className="app-container">
         <Routes>
-          <Route path="/" element={<Index />} />  {/* Update this to use Index component */}
+          <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/upload" element={<UploadPage />} />
