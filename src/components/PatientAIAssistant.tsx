@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -116,10 +117,16 @@ export default function PatientAIAssistant() {
       console.log("Patient query:", input);
       console.log("Patient context:", patientContext);
       
-      const aiResponse = await getPatientModelResponse(
-        input, 
-        patientContext
-      );
+      // Create a timeout promise that will reject after 10 seconds
+      const timeoutPromise = new Promise<string>((_, reject) => {
+        setTimeout(() => reject(new Error("Request timed out")), 10000);
+      });
+      
+      // Create the actual API request promise
+      const responsePromise = getPatientModelResponse(input, patientContext);
+      
+      // Use Promise.race to take whichever finishes first
+      const aiResponse = await Promise.race([responsePromise, timeoutPromise]);
       
       console.log("AI response:", aiResponse);
       
@@ -141,18 +148,40 @@ export default function PatientAIAssistant() {
       
       setConversationHistory(prev => [...prev, `AI: ${aiResponse}`]);
       
-      const newQuestions = generateRelatedQuestions(input, patientData.patient.name, patientData.patient.stage);
+      const newQuestions = generateRelatedQuestions(input, patientData?.patient?.name || "", patientData?.patient?.stage || "");
       setSuggestedQuestions(newQuestions);
     } catch (error) {
       console.error("Error getting response:", error);
+      // Provide a more helpful fallback response based on the question
+      const fallbackResponse = getFallbackResponse(input, patientData?.patient?.name || "", patientData?.patient?.stage || "");
+      
+      setResponse(fallbackResponse);
+      setConversationHistory(prev => [...prev, `AI: ${fallbackResponse}`]);
+      
       toast({
-        title: "Error",
-        description: "Failed to get AI response. Please try again. Error: " + (error instanceof Error ? error.message : String(error)),
-        variant: "destructive",
+        title: "Notice",
+        description: "Using offline response mode due to connection issues.",
       });
     } finally {
       setIsLoading(false);
       setInput("");
+    }
+  };
+  
+  // Generate a fallback response when API fails
+  const getFallbackResponse = (query: string, patientName: string, stage: string): string => {
+    const lowerQuery = query.toLowerCase();
+    
+    if (lowerQuery.includes("symptom") || lowerQuery.includes("sign")) {
+      return `${patientName} may experience various symptoms at the ${stage} stage of dementia, including memory difficulties, challenges with daily tasks, and possibly some changes in behavior or mood. It would be best to consult with their healthcare provider for specific symptom management strategies.`;
+    } else if (lowerQuery.includes("medicine") || lowerQuery.includes("medication") || lowerQuery.includes("drug")) {
+      return `Medication plans for ${patientName} should be determined by their healthcare provider. Common medications for dementia include cholinesterase inhibitors and memantine, but these need to be prescribed and monitored by a doctor.`;
+    } else if (lowerQuery.includes("activit") || lowerQuery.includes("exercise") || lowerQuery.includes("game")) {
+      return `For ${patientName}, appropriate activities might include simple puzzles, music therapy, gentle physical exercise, reminiscence activities with photos, and sensory stimulation. Activities should be tailored to their abilities and preferences.`;
+    } else if (lowerQuery.includes("care") || lowerQuery.includes("help")) {
+      return `Providing care for ${patientName} may involve establishing consistent routines, using simple communication, ensuring safety in the environment, and focusing on their remaining abilities rather than limitations. Regular healthcare check-ups are also important.`;
+    } else {
+      return `I understand you're asking about ${patientName}'s care. To provide the most helpful information about their ${stage} stage condition, could you provide more specific details about what aspect of care you're interested in? I can help with symptoms, daily care strategies, communication techniques, or managing specific challenges.`;
     }
   };
 
