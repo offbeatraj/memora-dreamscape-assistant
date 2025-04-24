@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,6 @@ export default function PatientAIAssistant() {
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Memoize the fetchPatientCaseFiles function
   const fetchPatientCaseFiles = useCallback(async (patientId: string) => {
     try {
       const patientCaseFiles = await getPatientCaseFiles(patientId);
@@ -43,7 +41,6 @@ export default function PatientAIAssistant() {
     }
   }, []);
 
-  // Handle patient data loaded event
   const handlePatientDataLoaded = useCallback(async (event: CustomEvent<PatientDataEvent>) => {
     setPatientData(event.detail);
     
@@ -55,7 +52,6 @@ export default function PatientAIAssistant() {
       
       setConversationHistory([`AI: ${initialGreeting}`]);
       
-      // Generate some initial suggested questions based on patient data
       const initialQuestions = [
         `What are the best activities for ${event.detail.patient.name} at the ${event.detail.patient.stage} stage?`,
         `What symptoms might ${event.detail.patient.name} experience?`,
@@ -68,7 +64,6 @@ export default function PatientAIAssistant() {
     }
   }, [fetchPatientCaseFiles]);
 
-  // Handle file upload events
   const handleFileUploaded = useCallback(async (event: CustomEvent<{patientId: string}>) => {
     if (patientData?.patient && event.detail.patientId === patientData.patient.id) {
       try {
@@ -87,18 +82,15 @@ export default function PatientAIAssistant() {
   }, [patientData, caseFiles, fetchPatientCaseFiles, toast]);
 
   useEffect(() => {
-    // Add event listeners
     document.addEventListener('patientDataLoaded', handlePatientDataLoaded as EventListener);
     document.addEventListener('patientFileUploaded', handleFileUploaded as EventListener);
     
-    // Clean up event listeners
     return () => {
       document.removeEventListener('patientDataLoaded', handlePatientDataLoaded as EventListener);
       document.removeEventListener('patientFileUploaded', handleFileUploaded as EventListener);
     };
   }, [handlePatientDataLoaded, handleFileUploaded]);
 
-  // Memoize the patient context to prevent unnecessary recalculations
   const patientContext = useMemo(() => {
     if (!patientData?.patient) return "";
     
@@ -112,7 +104,6 @@ export default function PatientAIAssistant() {
     ${conversationHistory.slice(-6).join("\n")}`;
   }, [patientData, caseFiles, conversationHistory]);
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -122,15 +113,18 @@ export default function PatientAIAssistant() {
     
     setIsLoading(true);
     try {
-      // FIX: Pass only required arguments (input and patientContext)
+      console.log("Patient query:", input);
+      console.log("Patient context:", patientContext);
+      
       const aiResponse = await getPatientModelResponse(
         input, 
         patientContext
       );
+      
+      console.log("AI response:", aiResponse);
       setResponse(aiResponse);
       
       if (patientData?.patient?.id) {
-        // FIX: Handle Promise properly without using catch on boolean
         Promise.resolve().then(() => {
           try {
             savePatientConversation(patientData.patient.id, `Q: ${input}\nA: ${aiResponse}`, "AI Caregiver Assistant");
@@ -142,16 +136,8 @@ export default function PatientAIAssistant() {
       
       setConversationHistory(prev => [...prev, `AI: ${aiResponse}`]);
       
-      // Generate new suggested questions based on the current conversation
-      if (patientData?.patient) {
-        const newQuestions = [
-          `How can I help with ${input.toLowerCase().includes('memory') ? 'other cognitive challenges' : 'memory issues'}?`,
-          `What resources are available for ${patientData.patient.name}'s condition?`,
-          `What should I expect next with ${patientData.patient.name}'s care?`,
-          `How do I handle ${input.toLowerCase().includes('stress') ? 'anxiety' : 'stress'} as a caregiver?`,
-        ];
-        setSuggestedQuestions(newQuestions);
-      }
+      const newQuestions = generateRelatedQuestions(input, patientData.patient.name, patientData.patient.stage);
+      setSuggestedQuestions(newQuestions);
     } catch (error) {
       console.error("Error getting response:", error);
       toast({
@@ -165,7 +151,47 @@ export default function PatientAIAssistant() {
     }
   };
 
-  // Handle question selection
+  const generateRelatedQuestions = (currentQuery: string, patientName: string, stage: string): string[] => {
+    const lowerQuery = currentQuery.toLowerCase();
+    
+    if (lowerQuery.includes("memory") || lowerQuery.includes("forget")) {
+      return [
+        `What activities can help strengthen ${patientName}'s remaining memory?`,
+        `How should I respond when ${patientName} doesn't recognize family members?`,
+        `What memory aids are most effective at the ${stage} stage?`,
+        `How can I help ${patientName} recall important daily routines?`
+      ];
+    } else if (lowerQuery.includes("agitat") || lowerQuery.includes("anger") || lowerQuery.includes("upset")) {
+      return [
+        `What are common triggers for agitation at the ${stage} stage?`,
+        `What calming techniques work best for ${patientName}?`,
+        `How can I prevent agitation during daily care activities?`,
+        `When should I seek medical help for behavior changes?`
+      ];
+    } else if (lowerQuery.includes("medication") || lowerQuery.includes("medicine") || lowerQuery.includes("drug")) {
+      return [
+        `What are common side effects to watch for with ${patientName}'s medications?`,
+        `What strategies help ensure medication adherence?`,
+        `How can I track if ${patientName}'s medications are working?`,
+        `When should medication doses be adjusted?`
+      ];
+    } else if (lowerQuery.includes("eat") || lowerQuery.includes("food") || lowerQuery.includes("meal") || lowerQuery.includes("diet")) {
+      return [
+        `What foods might benefit brain health for ${patientName}?`,
+        `How can I make mealtimes less stressful?`,
+        `What strategies help when ${patientName} refuses to eat?`,
+        `How should eating habits change as dementia progresses?`
+      ];
+    } else {
+      return [
+        `What changes should I expect as ${patientName} progresses in this stage?`,
+        `What resources are available for caregivers of ${stage} stage patients?`,
+        `How can I best communicate with ${patientName} at this stage?`,
+        `What activities are most appropriate for ${patientName} now?`
+      ];
+    }
+  };
+
   const handleSelectQuestion = useCallback((question: string) => {
     setInput(question);
   }, []);
@@ -213,7 +239,6 @@ export default function PatientAIAssistant() {
                       </Button>
                     </form>
 
-                    {/* Use the optimized component for suggested questions */}
                     {suggestedQuestions.length > 0 && (
                       <OptimizedChatSuggestions
                         questions={suggestedQuestions}

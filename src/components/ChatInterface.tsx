@@ -220,11 +220,18 @@ export default function ChatInterface() {
         prompt = "The user has shared their health data including blood pressure (120/80), temperature (98.6°F), heart rate (72 bpm), and oxygen (98%). Please provide an analysis and recommendations related to these readings and how they might relate to cognitive health.";
       }
       
+      // Add a console log to debug the prompt being sent
+      console.log("Sending prompt:", prompt);
+      console.log("With conversation history:", conversationHistory);
+      
       const response = await getModelResponse(
         prompt,
         patientContext ? JSON.stringify(patientContext) : null,
         conversationHistory
       );
+      
+      // Log the response for debugging
+      console.log("AI response:", response);
       
       let responseType: MessageType = "text";
       let responseMetadata = {};
