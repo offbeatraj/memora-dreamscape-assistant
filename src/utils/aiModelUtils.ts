@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { enhancePromptWithContext, improveResponseFormatting } from './chatbotEnhancement';
 
@@ -255,6 +256,9 @@ export const getPatientModelResponse = async (
       ${relevantContext ? `\nRelevant patient context:\n${relevantContext}` : ''}
       ${context ? `\nFull case study context:\n${context}` : ''}`;
       
+      console.log("Making API call with model: gemini-1.5-pro-latest");
+      console.log("System prompt:", systemPrompt);
+      
       const response = await fetch("https://router.requesty.ai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -278,6 +282,12 @@ export const getPatientModelResponse = async (
         })
       });
       
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API error response:", errorText);
+        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+      }
+      
       const data = await response.json();
       
       if (data.error) {
@@ -285,8 +295,13 @@ export const getPatientModelResponse = async (
         return getSimulatedResponse(prompt, context, questionType);
       }
       
-      if (data.choices && data.choices[0]) {
+      console.log("API response data:", data);
+      
+      if (data.choices && data.choices[0] && data.choices[0].message) {
         return data.choices[0].message.content;
+      } else {
+        console.error("Unexpected API response format:", data);
+        throw new Error("Invalid response structure from API");
       }
       
       return getSimulatedResponse(prompt, context, questionType);
@@ -295,6 +310,7 @@ export const getPatientModelResponse = async (
       return getSimulatedResponse(prompt, context);
     }
   } else {
+    console.log("No API key available, using simulated response");
     return getSimulatedResponse(prompt, context);
   }
 };
@@ -313,10 +329,63 @@ export const getModelResponse = async (
       conversationHistory || []
     );
     
-    // Add a random delay between 500-1500ms to simulate network latency
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+    const apiKey = await getOpenAIKey();
     
-    return getSimulatedResponse(enhancedPrompt, patientContext || undefined);
+    if (apiKey) {
+      try {
+        console.log("Making general model API call with model: gemini-1.5-pro-latest");
+        
+        const response = await fetch("https://router.requesty.ai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: "gemini-1.5-pro-latest",
+            messages: [
+              {
+                role: "system",
+                content: "You are a specialized AI assistant for Alzheimer's and dementia caregivers and patients. Provide clear, concise, and helpful responses."
+              },
+              {
+                role: "user",
+                content: enhancedPrompt
+              }
+            ],
+            temperature: 0.5,
+            max_tokens: 2000
+          })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("General API error response:", errorText);
+          throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        
+        console.log("General API response data:", data);
+        
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+          return improveResponseFormatting(data.choices[0].message.content);
+        } else {
+          console.error("Unexpected general API response format:", data);
+          throw new Error("Invalid response structure from API");
+        }
+      } catch (error) {
+        console.error("Error calling general API:", error);
+        // Fall back to simulated response
+        return getSimulatedResponse(enhancedPrompt, patientContext || undefined);
+      }
+    } else {
+      console.log("No API key for general response, using simulated response");
+      // Add a random delay between 500-1500ms to simulate network latency
+      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+      
+      return getSimulatedResponse(enhancedPrompt, patientContext || undefined);
+    }
   } catch (error) {
     console.error("Error in getModelResponse:", error);
     return "I'm sorry, I encountered an error while processing your request. Please try again.";

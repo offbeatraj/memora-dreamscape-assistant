@@ -122,6 +122,11 @@ export default function PatientAIAssistant() {
       );
       
       console.log("AI response:", aiResponse);
+      
+      if (!aiResponse || typeof aiResponse !== 'string') {
+        throw new Error("Invalid response from patient AI model");
+      }
+      
       setResponse(aiResponse);
       
       if (patientData?.patient?.id) {
@@ -142,7 +147,7 @@ export default function PatientAIAssistant() {
       console.error("Error getting response:", error);
       toast({
         title: "Error",
-        description: "Failed to get AI response. Please try again.",
+        description: "Failed to get AI response. Please try again. Error: " + (error instanceof Error ? error.message : String(error)),
         variant: "destructive",
       });
     } finally {

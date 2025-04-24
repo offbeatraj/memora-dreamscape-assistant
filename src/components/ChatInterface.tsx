@@ -224,6 +224,7 @@ export default function ChatInterface() {
       console.log("Sending prompt:", prompt);
       console.log("With conversation history:", conversationHistory);
       
+      // Directly use getModelResponse from aiModelUtils
       const response = await getModelResponse(
         prompt,
         patientContext ? JSON.stringify(patientContext) : null,
@@ -232,6 +233,10 @@ export default function ChatInterface() {
       
       // Log the response for debugging
       console.log("AI response:", response);
+      
+      if (!response || typeof response !== 'string') {
+        throw new Error("Invalid response from AI model");
+      }
       
       let responseType: MessageType = "text";
       let responseMetadata = {};
@@ -283,7 +288,7 @@ export default function ChatInterface() {
       
       toast({
         title: "AI Model Error",
-        description: "There was an error generating a response.",
+        description: "There was an error generating a response: " + (error instanceof Error ? error.message : String(error)),
         variant: "destructive",
       });
     } finally {
