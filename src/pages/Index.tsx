@@ -63,7 +63,8 @@ const Home = () => {
 
   useEffect(() => {
     setMounted(true);
-    // Add a console log to confirm this component is being rendered
+    // Add a page title to distinguish this page
+    document.title = "Memora | Home";
     console.log("Home/Index component rendering");
   }, []);
 
@@ -75,14 +76,14 @@ const Home = () => {
             <div className="inline-block animate-float">
               <div className="flex items-center gap-2 mb-4 bg-memora-purple/10 text-memora-purple-dark px-4 py-2 rounded-full">
                 <Brain className="h-5 w-5" />
-                <span className="font-medium">Alzheimer's Assistant</span>
+                <span className="font-medium">Welcome to Memora</span>
               </div>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 text-gradient">
               Your Memory Companion
             </h1>
             <p className="text-xl text-foreground/80 mb-8 max-w-xl">
-              Memora is a personalized assistant designed to help Alzheimer's patients
+              A personalized assistant designed to help Alzheimer's patients
               and their caregivers navigate daily challenges with confidence.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">

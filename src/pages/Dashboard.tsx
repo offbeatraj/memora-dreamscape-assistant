@@ -1,4 +1,3 @@
-
 import Layout from "@/components/Layout";
 import PatientProfile from "@/components/PatientProfile";
 import PatientSelector from "@/components/PatientSelector";
@@ -12,6 +11,7 @@ import PatientWellbeingQuestionnaire from "@/components/PatientWellbeingQuestion
 import { useToast } from "@/components/ui/use-toast";
 import { getPatientConversations, formatConversationTimestamp } from "@/utils/aiModelUtils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import PatientManager from "@/components/PatientManager";
 
 interface Patient {
   id: string;
@@ -60,21 +60,18 @@ export default function Dashboard() {
   });
   const { toast } = useToast();
 
-  // Handle patient selection
   const handlePatientSelect = (patient: Patient) => {
     console.log("Patient selected:", patient);
     setSelectedPatient(patient);
     fetchPatientData(patient.id);
   };
 
-  // Fetch patient-specific data
   const fetchPatientData = async (patientId: string) => {
     console.log("Fetching data for patient ID:", patientId);
     setIsLoading(true);
     setError(null);
     
     try {
-      // Fetch patient tasks
       const { data: tasksData, error: tasksError } = await supabase
         .from('patient_tasks')
         .select('*')
@@ -89,7 +86,6 @@ export default function Dashboard() {
       
       console.log("Tasks data received:", tasksData);
       
-      // Format and prioritize tasks
       const formattedTasks = tasksData?.map(task => ({
         id: task.id,
         title: task.title,
@@ -100,7 +96,6 @@ export default function Dashboard() {
       
       setPatientTasks(formattedTasks);
       
-      // Fetch patient files
       const { data: filesData, error: filesError } = await supabase
         .from('patient_files')
         .select('*')
@@ -124,12 +119,9 @@ export default function Dashboard() {
       
       setPatientFiles(formattedFiles);
       
-      // Fetch actual patient conversations from storage
       fetchPatientConversations(patientId);
       
-      // Generate wellbeing scores (would be from actual questionnaire results in production)
       generateWellbeingScores();
-      
     } catch (error: any) {
       console.error('Error fetching patient data:', error);
       setError(error?.message || 'Failed to load patient data');
@@ -142,8 +134,7 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
-  
-  // Helper function to determine task priority
+
   const determinePriority = (dueDate: string, status: string): "high" | "medium" | "low" => {
     if (status === "overdue") return "high";
     
@@ -155,14 +146,11 @@ export default function Dashboard() {
     if (diffDays <= 3) return "medium";
     return "low";
   };
-  
-  // Fetch patient conversations from storage
+
   const fetchPatientConversations = (patientId: string) => {
-    // Get stored conversations for this patient
     const storedConversations = getPatientConversations(patientId);
     
     if (storedConversations && storedConversations.length > 0) {
-      // Format the conversations for display
       const formattedConversations = storedConversations.map(conv => ({
         id: conv.id || crypto.randomUUID(),
         title: conv.title || "AI Assistant",
@@ -172,14 +160,11 @@ export default function Dashboard() {
       
       setPatientConversations(formattedConversations);
     } else {
-      // If no stored conversations, create fallback conversations
       createFallbackConversations(patientId);
     }
   };
-  
-  // Create fallback conversations if none exist
+
   const createFallbackConversations = (patientId: string) => {
-    // In production, these would come from a database or chat history
     const mockConversations = [
       {
         id: "1",
@@ -209,13 +194,11 @@ export default function Dashboard() {
     
     setPatientConversations(mockConversations);
   };
-  
-  // Generate wellbeing scores - in production, these would come from questionnaire results
+
   const generateWellbeingScores = () => {
-    // In a real app, these would be calculated from patient questionnaire responses
-    const sleep = Math.floor(Math.random() * 30) + 70; // 70-100%
-    const activity = Math.floor(Math.random() * 40) + 60; // 60-100%
-    const mood = Math.floor(Math.random() * 35) + 65; // 65-100%
+    const sleep = Math.floor(Math.random() * 30) + 70;
+    const activity = Math.floor(Math.random() * 40) + 60;
+    const mood = Math.floor(Math.random() * 35) + 65;
     const overall = Math.floor((sleep + activity + mood) / 3);
     
     setWellbeingScores({
@@ -225,8 +208,7 @@ export default function Dashboard() {
       overall
     });
   };
-  
-  // Handle questionnaire submission
+
   const handleQuestionnaireSubmit = (scores: {sleep: number, activity: number, mood: number, overall: number}) => {
     setWellbeingScores(scores);
     
@@ -236,11 +218,12 @@ export default function Dashboard() {
     });
   };
 
-  // Listen for new conversations from PatientAIAssistant
   useEffect(() => {
+    document.title = "Patient Dashboard | Memora";
+    console.log("Dashboard page mounted");
+    
     const handleNewConversation = (event: CustomEvent) => {
       if (selectedPatient && event.detail.patientId === selectedPatient.id) {
-        // Refresh conversations when a new one is added
         fetchPatientConversations(selectedPatient.id);
       }
     };
@@ -257,9 +240,9 @@ export default function Dashboard() {
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold mb-2">Memory Support Dashboard</h1>
+            <h1 className="text-3xl font-bold mb-2">Patient Dashboard</h1>
             <p className="text-muted-foreground">
-              Track cognitive health, daily activities, and access support resources.
+              Monitor and manage patient care, cognitive health, and support resources.
             </p>
           </div>
           <PatientSelector onSelectPatient={handlePatientSelect} />
@@ -275,13 +258,7 @@ export default function Dashboard() {
       )}
       
       {!selectedPatient ? (
-        <div className="flex flex-col items-center justify-center py-16">
-          <Brain className="h-16 w-16 text-memora-purple/30 mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Select a Patient</h2>
-          <p className="text-muted-foreground text-center max-w-md">
-            Please select a patient from the dropdown above to view their dashboard information and wellbeing status.
-          </p>
-        </div>
+        <PatientManager />
       ) : isLoading ? (
         <div className="flex flex-col items-center justify-center py-16">
           <Loader2 className="h-16 w-16 text-memora-purple animate-spin mb-4" />

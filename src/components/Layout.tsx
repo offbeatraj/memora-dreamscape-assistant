@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, Brain, MessageSquare, Upload, BookOpen, LayoutDashboard, Users } from "lucide-react";
+import { Menu, Brain, MessageSquare, Upload, BookOpen, LayoutDashboard, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 interface NavItem {
@@ -23,6 +23,20 @@ const navItems: NavItem[] = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  
+  // Log the current path to help with debugging
+  console.log("Current path:", location.pathname);
+  
+  // Function to check if a path is active, supporting exact matches and prefixes
+  const isActive = (path: string) => {
+    if (path === "/" && location.pathname === "/") {
+      return true;
+    }
+    if (path !== "/" && (location.pathname === path || location.pathname.startsWith(`${path}/`))) {
+      return true;
+    }
+    return false;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-memora-gray">
@@ -41,12 +55,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               key={item.href}
               to={item.href}
               className={`text-sm font-medium transition-colors flex items-center gap-2 ${
-                location.pathname === item.href
+                isActive(item.href)
                   ? "text-memora-purple-dark"
                   : "text-foreground/70 hover:text-foreground"
               }`}
             >
-              <span className={location.pathname === item.href ? "text-memora-purple" : "text-foreground/70"}>
+              <span className={isActive(item.href) ? "text-memora-purple" : "text-foreground/70"}>
                 {item.icon}
               </span>
               {item.label}
@@ -70,12 +84,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   to={item.href}
                   onClick={() => setOpen(false)}
                   className={`text-lg font-medium transition-colors p-2 rounded-md flex items-center gap-3 ${
-                    location.pathname === item.href
+                    isActive(item.href)
                       ? "bg-memora-purple/10 text-memora-purple-dark"
                       : "hover:bg-memora-purple/5"
                   }`}
                 >
-                  <span className={location.pathname === item.href ? "text-memora-purple" : "text-foreground/70"}>
+                  <span className={isActive(item.href) ? "text-memora-purple" : "text-foreground/70"}>
                     {item.icon}
                   </span>
                   {item.label}
