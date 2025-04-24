@@ -1,16 +1,16 @@
-
 import Layout from "@/components/Layout";
 import PatientProfile from "@/components/PatientProfile";
 import PatientSelector from "@/components/PatientSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, FileText, Brain, MessageSquare, Activity, Loader2 } from "lucide-react";
+import { Calendar, FileText, Brain, MessageSquare, Activity, Loader2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PatientAIAssistant from "@/components/PatientAIAssistant";
 import PatientWellbeingQuestionnaire from "@/components/PatientWellbeingQuestionnaire";
 import { useToast } from "@/components/ui/use-toast";
 import { getPatientConversations, formatConversationTimestamp } from "@/utils/aiModelUtils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Patient {
   id: string;
@@ -44,11 +44,13 @@ interface PatientConversation {
 }
 
 export default function Dashboard() {
+  console.log("Dashboard component rendering");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [patientTasks, setPatientTasks] = useState<PatientTask[]>([]);
   const [patientFiles, setPatientFiles] = useState<PatientFile[]>([]);
   const [patientConversations, setPatientConversations] = useState<PatientConversation[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [wellbeingScores, setWellbeingScores] = useState({
     sleep: 0,
     activity: 0,
@@ -59,13 +61,17 @@ export default function Dashboard() {
 
   // Handle patient selection
   const handlePatientSelect = (patient: Patient) => {
+    console.log("Patient selected:", patient);
     setSelectedPatient(patient);
     fetchPatientData(patient.id);
   };
 
   // Fetch patient-specific data
   const fetchPatientData = async (patientId: string) => {
+    console.log("Fetching data for patient ID:", patientId);
     setIsLoading(true);
+    setError(null);
+    
     try {
       // Fetch patient tasks
       const { data: tasksData, error: tasksError } = await supabase
@@ -75,16 +81,21 @@ export default function Dashboard() {
         .order('due_date', { ascending: true })
         .limit(5);
       
-      if (tasksError) throw tasksError;
+      if (tasksError) {
+        console.error('Error fetching patient tasks:', tasksError);
+        throw tasksError;
+      }
+      
+      console.log("Tasks data received:", tasksData);
       
       // Format and prioritize tasks
-      const formattedTasks = tasksData.map(task => ({
+      const formattedTasks = tasksData?.map(task => ({
         id: task.id,
         title: task.title,
         due_date: new Date(task.due_date).toLocaleDateString(),
         status: task.status,
         priority: determinePriority(task.due_date, task.status)
-      }));
+      })) || [];
       
       setPatientTasks(formattedTasks);
       
@@ -96,14 +107,19 @@ export default function Dashboard() {
         .order('upload_date', { ascending: false })
         .limit(10);
       
-      if (filesError) throw filesError;
+      if (filesError) {
+        console.error('Error fetching patient files:', filesError);
+        throw filesError;
+      }
       
-      const formattedFiles = filesData.map(file => ({
+      console.log("Files data received:", filesData);
+      
+      const formattedFiles = filesData?.map(file => ({
         id: file.id,
         file_name: file.file_name,
         upload_date: new Date(file.upload_date).toLocaleDateString(),
         file_category: file.file_category
-      }));
+      })) || [];
       
       setPatientFiles(formattedFiles);
       
@@ -113,8 +129,9 @@ export default function Dashboard() {
       // Generate wellbeing scores (would be from actual questionnaire results in production)
       generateWellbeingScores();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching patient data:', error);
+      setError(error?.message || 'Failed to load patient data');
       toast({
         title: "Error fetching patient data",
         description: "Could not load patient information. Please try again.",
@@ -227,10 +244,8 @@ export default function Dashboard() {
       }
     };
 
-    // Add event listener
     document.addEventListener('newPatientConversation', handleNewConversation as EventListener);
     
-    // Clean up
     return () => {
       document.removeEventListener('newPatientConversation', handleNewConversation as EventListener);
     };
@@ -249,6 +264,14 @@ export default function Dashboard() {
           <PatientSelector onSelectPatient={handlePatientSelect} />
         </div>
       </div>
+      
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       
       {!selectedPatient ? (
         <div className="flex flex-col items-center justify-center py-16">
