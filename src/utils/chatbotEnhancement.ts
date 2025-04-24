@@ -52,6 +52,33 @@ export const questionPatterns: QuestionPattern[] = [
       /fire|smoke|heat|cold|weather|emergency|help|assistance|aid|support/i
     ],
     contextImportance: 9
+  },
+  {
+    category: "general_knowledge",
+    patterns: [
+      /what is|what are|who is|who are|where is|where are|when is|when was|how does|why does/i,
+      /explain|describe|define|meaning|definition|concept|fact|information|knowledge|learn/i,
+      /history|science|math|art|literature|geography|technology|sports|entertainment/i
+    ],
+    contextImportance: 3
+  },
+  {
+    category: "current_events",
+    patterns: [
+      /news|current|recent|latest|today|yesterday|this week|this month|this year/i,
+      /politics|election|government|president|minister|leader|official|policy/i,
+      /event|happening|incident|occurrence|situation|development|update|bulletin/i
+    ],
+    contextImportance: 2
+  },
+  {
+    category: "daily_life",
+    patterns: [
+      /weather|forecast|temperature|rain|snow|sun|cloud|storm|humidity/i,
+      /time|date|day|month|year|hour|minute|second|schedule|calendar|appointment/i,
+      /recipe|cook|bake|food|meal|ingredient|instruction|step|preparation/i
+    ],
+    contextImportance: 1
   }
 ];
 
@@ -85,6 +112,12 @@ export function enhancePromptWithContext(
       enhancedPrompt = `Provide practical, step-by-step guidance for this daily care question: ${userQuestion}. Focus on simplicity and safety.`;
     } else if (primaryCategory.category === "safety") {
       enhancedPrompt = `This is a safety-related question: ${userQuestion}. Prioritize caregiver and patient safety with clear, actionable advice.`;
+    } else if (primaryCategory.category === "general_knowledge") {
+      enhancedPrompt = `This is a general knowledge question: ${userQuestion}. Provide an informative, accurate response with relevant facts and context.`;
+    } else if (primaryCategory.category === "current_events") {
+      enhancedPrompt = `This question relates to current events or news: ${userQuestion}. Note that you don't have real-time data, so acknowledge this limitation while providing general information.`;
+    } else if (primaryCategory.category === "daily_life") {
+      enhancedPrompt = `This is a practical daily life question: ${userQuestion}. Provide helpful, actionable information.`;
     }
   }
   
@@ -131,3 +164,4 @@ export function improveResponseFormatting(response: string): string {
   
   return improved;
 }
+

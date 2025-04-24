@@ -116,12 +116,12 @@ export default function Chat() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-memora-purple" />
-              <h1 className="text-2xl font-bold">Memory Assistant Chat</h1>
+              <h1 className="text-2xl font-bold">AI Chat Assistant</h1>
             </div>
             <PatientSelector onSelectPatient={handlePatientSelect} />
           </div>
           <p className="text-muted-foreground">
-            Ask questions about Alzheimer's or request personalized help. Your AI companion can provide information, emotional support, and memory assistance.
+            Ask me anything! I can answer general questions, provide information about Alzheimer's, offer emotional support, or assist with memory challenges.
           </p>
         </div>
         
@@ -157,7 +157,7 @@ export default function Chat() {
             <Tabs defaultValue="assistant" className="w-full">
               <TabsList className="w-full grid grid-cols-2 mb-4">
                 <TabsTrigger value="assistant">
-                  Personal Assistant
+                  Interactive Chat
                 </TabsTrigger>
                 <TabsTrigger value="info">
                   Information Mode
@@ -242,3 +242,4 @@ export default function Chat() {
     </Layout>
   );
 }
+

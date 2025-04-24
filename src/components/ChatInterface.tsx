@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,7 +48,7 @@ const validateStage = (stage: string): "early" | "moderate" | "advanced" => {
 const initialMessages: Message[] = [
   {
     id: "1",
-    content: "Hello! I'm Memora, your personal memory assistant powered by Gemini 2.0 Flash. How can I help you today? I can answer questions about Alzheimer's, provide daily support, or just chat.",
+    content: "Hello! I'm Memora, your versatile AI assistant. I can answer questions on any topic, provide helpful information, or just chat. I also have specialized knowledge about Alzheimer's disease and memory care if you need it. How can I help you today?",
     role: "assistant",
     timestamp: new Date(),
     type: "text"
@@ -58,16 +57,16 @@ const initialMessages: Message[] = [
 
 const sampleQuestions = [
   "What are the early symptoms of Alzheimer's?",
-  "Help me remember to take my medicine",
-  "What activities can improve brain health?",
-  "Tell me about my family photos",
+  "What's the weather like today?",
+  "Tell me a joke",
   "What day is it today?",
+  "Can you recommend a good book?",
 ];
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"chat" | "insights" | "questions">("chat");
   const [attachmentType, setAttachmentType] = useState<"none" | "image" | "health" | "question">("none");
   const [patientContext, setPatientContext] = useState<PatientContext | null>(null);
@@ -220,18 +219,15 @@ export default function ChatInterface() {
         prompt = "The user has shared their health data including blood pressure (120/80), temperature (98.6°F), heart rate (72 bpm), and oxygen (98%). Please provide an analysis and recommendations related to these readings and how they might relate to cognitive health.";
       }
       
-      // Add a console log to debug the prompt being sent
       console.log("Sending prompt:", prompt);
       console.log("With conversation history:", conversationHistory);
       
-      // Directly use getModelResponse from aiModelUtils
       const response = await getModelResponse(
         prompt,
         patientContext ? JSON.stringify(patientContext) : null,
         conversationHistory
       );
       
-      // Log the response for debugging
       console.log("AI response:", response);
       
       if (!response || typeof response !== 'string') {
