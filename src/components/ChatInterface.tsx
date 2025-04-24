@@ -445,7 +445,7 @@ export default function ChatInterface() {
     <div className="flex flex-col h-[70vh] md:h-[80vh]">
       <div className="bg-green-100 mb-4 p-3 rounded-lg flex items-center">
         <Brain className="h-5 w-5 text-green-700 mr-2" />
-        <span className="text-sm">Using <span className="font-medium">Gemini 2.0 Flash</span> model</span>
+        <span className="text-sm">Using <span className="font-medium">Gemini 1.5 Pro</span> model</span>
         {isLoading && <Loader2 className="h-4 w-4 ml-2 animate-spin text-green-700" />}
       </div>
       

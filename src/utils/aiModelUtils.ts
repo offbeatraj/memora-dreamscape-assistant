@@ -262,7 +262,7 @@ export const getPatientModelResponse = async (
           Authorization: `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "google/gemini-2.0-flash-exp",
+          model: "gemini-1.5-pro-latest",
           messages: [
             {
               role: "system",
